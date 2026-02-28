@@ -297,7 +297,7 @@
       showError('Your account is not authorised. Contact your administrator to request access.');
     }
     if (user && isAuthorized(user)) {
-      window.location.replace('index.html');
+      window.location.replace('index');
     }
   });
 
@@ -336,7 +336,7 @@
         await auth.signOut();
         showError('Your account is not authorised. Contact your administrator to request access.');
       } else {
-        window.location.replace('index.html');
+        window.location.replace('index');
       }
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
@@ -373,7 +373,7 @@
       // Email/password: if Firebase Auth accepts the credentials,
       // the user was manually added → authorize them directly.
       await auth.signInWithEmailAndPassword(email, password);
-      window.location.replace('index.html');
+      window.location.replace('index');
     } catch (err) {
       showError(ERROR_MESSAGES[err.code] || err.message);
     } finally {

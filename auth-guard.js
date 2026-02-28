@@ -39,14 +39,14 @@ function isAuthorized(user) {
 firebase.auth().onAuthStateChanged(async (user) => {
   // 1. Not signed in → go to login
   if (!user) {
-    window.location.replace('login.html');
+    window.location.replace('login');
     return;
   }
 
   // 2. Not authorized (wrong domain AND not a manually-added email/password user)
   if (!isAuthorized(user)) {
     await firebase.auth().signOut();
-    window.location.replace('login.html?error=domain');
+    window.location.replace('login?error=domain');
     return;
   }
 
@@ -74,7 +74,7 @@ firebase.auth().onAuthStateChanged(async (user) => {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
       await firebase.auth().signOut();
-      window.location.href = 'login.html';
+      window.location.href = 'login';
     });
   }
 
