@@ -2,14 +2,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: only signed-in users from allowed domains
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // Domain-based check: @eduversal.org emails
     function isEduversal() {
       return isSignedIn() &&
              request.auth.token.email.matches('.*@eduversal\\.org$');
+    }
+
+    // Allowlist check: email manually added to the `allowlist` collection
+    function isAllowlisted() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/allowlist/$(request.auth.token.email));
+    }
+
+    // Authorized = eduversal domain OR manually allowlisted
+    function isAuthorized() {
+      return isEduversal() || isAllowlisted();
     }
 
     // Helper: read the caller's Firestore profile
@@ -18,47 +29,53 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isEduversal() && userProfile().role == 'admin';
+      return isAuthorized() && userProfile().role == 'admin';
+    }
+
+    // ── allowlist ──────────────────────────────────────────
+    // Document ID = the email address being allowlisted.
+    // Admins manage it; any signed-in user can read their own entry
+    // (needed so isAllowlisted() can resolve before full authorization).
+    match /allowlist/{email} {
+      allow read:   if isSignedIn() && request.auth.token.email == email;
+      allow create, update, delete: if isAdmin();
     }
 
     // ── users ──────────────────────────────────────────────
     match /users/{uid} {
-      // Users can read/write their own profile; admins can read all
-      allow read:  if isEduversal() && (request.auth.uid == uid || isAdmin());
-      allow write: if isEduversal() && (request.auth.uid == uid || isAdmin());
+      allow read:  if isAuthorized() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAuthorized() && (request.auth.uid == uid || isAdmin());
     }
 
     // ── schools ────────────────────────────────────────────
     match /schools/{schoolId} {
-      allow read:   if isEduversal();
+      allow read:   if isAuthorized();
       allow create, update, delete: if isAdmin();
     }
 
     // ── staff ──────────────────────────────────────────────
     match /staff/{staffId} {
-      allow read:   if isEduversal();
+      allow read:   if isAuthorized();
       allow create, update, delete: if isAdmin();
     }
 
     // ── announcements ──────────────────────────────────────
     match /announcements/{annId} {
-      allow read:   if isEduversal();
+      allow read:   if isAuthorized();
       allow create, update, delete: if isAdmin();
     }
 
     // ── topics (message board) ─────────────────────────────
     match /topics/{topicId} {
-      allow read:   if isEduversal();
-      allow create: if isEduversal();
-      // Only author or admin can edit/delete the topic itself
-      allow update: if isEduversal() &&
+      allow read:   if isAuthorized();
+      allow create: if isAuthorized();
+      allow update: if isAuthorized() &&
                        (resource.data.author == request.auth.token.email || isAdmin());
       allow delete: if isAdmin();
 
-      // Replies sub-collection
       match /replies/{replyId} {
-        allow read:   if isEduversal();
-        allow create: if isEduversal();
+        allow read:   if isAuthorized();
+        allow create: if isAuthorized();
         allow update, delete: if isAdmin();
       }
     }

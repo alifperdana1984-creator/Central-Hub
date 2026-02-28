@@ -26,6 +26,19 @@ const ALLOWED_DOMAINS = ['eduversal.org'];
 window.db   = firebase.firestore();
 window.auth = firebase.auth();
 
+// Returns true if the user's email matches an allowed domain
+// OR is listed in the Firestore `allowlist` collection.
+async function isAuthorized(user) {
+  if (ALLOWED_DOMAINS.includes(user.email.split('@')[1])) return true;
+  try {
+    const snap = await window.db.collection('allowlist').doc(user.email).get();
+    return snap.exists;
+  } catch (e) {
+    console.warn('Allowlist check failed:', e);
+    return false;
+  }
+}
+
 firebase.auth().onAuthStateChanged(async (user) => {
   // 1. Not signed in → go to login
   if (!user) {
@@ -33,9 +46,8 @@ firebase.auth().onAuthStateChanged(async (user) => {
     return;
   }
 
-  // 2. Wrong domain → sign out + redirect with error flag
-  const domain = user.email.split('@')[1];
-  if (!ALLOWED_DOMAINS.includes(domain)) {
+  // 2. Not authorized (wrong domain AND not in allowlist) → sign out
+  if (!(await isAuthorized(user))) {
     await firebase.auth().signOut();
     window.location.replace('login.html?error=domain');
     return;
