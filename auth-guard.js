@@ -26,17 +26,14 @@ const ALLOWED_DOMAINS = ['eduversal.org'];
 window.db   = firebase.firestore();
 window.auth = firebase.auth();
 
-// Returns true if the user's email matches an allowed domain
-// OR is listed in the Firestore `allowlist` collection.
-async function isAuthorized(user) {
+// Returns true if:
+//   • email domain is in ALLOWED_DOMAINS (@eduversal.org), OR
+//   • user signed in via email/password — meaning they were manually
+//     added to Firebase Authentication by an admin (they know the password).
+// Google OAuth users with non-allowed domains are always rejected.
+function isAuthorized(user) {
   if (ALLOWED_DOMAINS.includes(user.email.split('@')[1])) return true;
-  try {
-    const snap = await window.db.collection('allowlist').doc(user.email).get();
-    return snap.exists;
-  } catch (e) {
-    console.warn('Allowlist check failed:', e);
-    return false;
-  }
+  return user.providerData.some(p => p.providerId === 'password');
 }
 
 firebase.auth().onAuthStateChanged(async (user) => {
@@ -46,8 +43,8 @@ firebase.auth().onAuthStateChanged(async (user) => {
     return;
   }
 
-  // 2. Not authorized (wrong domain AND not in allowlist) → sign out
-  if (!(await isAuthorized(user))) {
+  // 2. Not authorized (wrong domain AND not a manually-added email/password user)
+  if (!isAuthorized(user)) {
     await firebase.auth().signOut();
     window.location.replace('login.html?error=domain');
     return;

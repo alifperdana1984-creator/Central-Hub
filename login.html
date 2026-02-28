@@ -263,8 +263,6 @@
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
 <script>
   // ============================================================
   // login.html — Firebase auth (no auth-guard; this IS the guard)
@@ -283,25 +281,22 @@
   });
 
   const auth = firebase.auth();
-  const db   = firebase.firestore();
 
-  // Returns true if email domain is allowed OR email is in Firestore allowlist.
-  async function isAuthorized(user) {
+  // Allowed if:
+  //   • @eduversal.org domain, OR
+  //   • signed in via email/password (= manually added in Firebase Console)
+  // Google OAuth with a non-allowed domain is always rejected.
+  function isAuthorized(user) {
     if (ALLOWED_DOMAINS.includes(user.email.split('@')[1])) return true;
-    try {
-      const snap = await db.collection('allowlist').doc(user.email).get();
-      return snap.exists;
-    } catch (e) {
-      return false;
-    }
+    return user.providerData.some(p => p.providerId === 'password');
   }
 
   // If already signed in and authorized → go straight to dashboard
-  auth.onAuthStateChanged(async user => {
+  auth.onAuthStateChanged(user => {
     if (new URLSearchParams(location.search).get('error') === 'domain') {
       showError('Your account is not authorised. Contact your administrator to request access.');
     }
-    if (user && await isAuthorized(user)) {
+    if (user && isAuthorized(user)) {
       window.location.replace('index.html');
     }
   });
@@ -332,10 +327,12 @@
     btn.textContent = 'Signing in…';
 
     const provider = new firebase.auth.GoogleAuthProvider();
+    // Hint Google to show only @eduversal.org accounts in the picker
+    provider.setCustomParameters({ hd: 'eduversal.org' });
 
     try {
       const result = await auth.signInWithPopup(provider);
-      if (!(await isAuthorized(result.user))) {
+      if (!isAuthorized(result.user)) {
         await auth.signOut();
         showError('Your account is not authorised. Contact your administrator to request access.');
       } else {
@@ -373,12 +370,9 @@
     btn.textContent = 'Signing in…';
 
     try {
-      const cred = await auth.signInWithEmailAndPassword(email, password);
-      if (!(await isAuthorized(cred.user))) {
-        await auth.signOut();
-        showError('Your account is not authorised. Contact your administrator to request access.');
-        return;
-      }
+      // Email/password: if Firebase Auth accepts the credentials,
+      // the user was manually added → authorize them directly.
+      await auth.signInWithEmailAndPassword(email, password);
       window.location.replace('index.html');
     } catch (err) {
       showError(ERROR_MESSAGES[err.code] || err.message);

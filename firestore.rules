@@ -12,15 +12,16 @@ service cloud.firestore {
              request.auth.token.email.matches('.*@eduversal\\.org$');
     }
 
-    // Allowlist check: email manually added to the `allowlist` collection
-    function isAllowlisted() {
+    // Manually-added users sign in via email/password — Firebase sets
+    // sign_in_provider = 'password' for these accounts.
+    function isEmailPasswordUser() {
       return isSignedIn() &&
-             exists(/databases/$(database)/documents/allowlist/$(request.auth.token.email));
+             request.auth.token.firebase.sign_in_provider == 'password';
     }
 
-    // Authorized = eduversal domain OR manually allowlisted
+    // Authorized = @eduversal.org domain OR manually-added email/password account
     function isAuthorized() {
-      return isEduversal() || isAllowlisted();
+      return isEduversal() || isEmailPasswordUser();
     }
 
     // Helper: read the caller's Firestore profile
@@ -30,15 +31,6 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthorized() && userProfile().role == 'admin';
-    }
-
-    // ── allowlist ──────────────────────────────────────────
-    // Document ID = the email address being allowlisted.
-    // Admins manage it; any signed-in user can read their own entry
-    // (needed so isAllowlisted() can resolve before full authorization).
-    match /allowlist/{email} {
-      allow read:   if isSignedIn() && request.auth.token.email == email;
-      allow create, update, delete: if isAdmin();
     }
 
     // ── users ──────────────────────────────────────────────
