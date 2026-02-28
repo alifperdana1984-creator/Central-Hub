@@ -1,0 +1,19 @@
+# Claude Code local settings
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+
+# Firebase
+.firebase/
+.firebaserc
+
+# Secrets — never commit real API keys
+# (the firebaseConfig in this project uses client-side keys which are
+#  safe to expose publicly; they are locked down by Firebase Security Rules
+#  and domain restrictions in the Firebase console)

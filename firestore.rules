@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: only signed-in users from allowed domains
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEduversal() {
+      return isSignedIn() &&
+             request.auth.token.email.matches('.*@eduversal\\.org$');
+    }
+
+    // Helper: read the caller's Firestore profile
+    function userProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isEduversal() && userProfile().role == 'admin';
+    }
+
+    // ── users ──────────────────────────────────────────────
+    match /users/{uid} {
+      // Users can read/write their own profile; admins can read all
+      allow read:  if isEduversal() && (request.auth.uid == uid || isAdmin());
+      allow write: if isEduversal() && (request.auth.uid == uid || isAdmin());
+    }
+
+    // ── schools ────────────────────────────────────────────
+    match /schools/{schoolId} {
+      allow read:   if isEduversal();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── staff ──────────────────────────────────────────────
+    match /staff/{staffId} {
+      allow read:   if isEduversal();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── announcements ──────────────────────────────────────
+    match /announcements/{annId} {
+      allow read:   if isEduversal();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── topics (message board) ─────────────────────────────
+    match /topics/{topicId} {
+      allow read:   if isEduversal();
+      allow create: if isEduversal();
+      // Only author or admin can edit/delete the topic itself
+      allow update: if isEduversal() &&
+                       (resource.data.author == request.auth.token.email || isAdmin());
+      allow delete: if isAdmin();
+
+      // Replies sub-collection
+      match /replies/{replyId} {
+        allow read:   if isEduversal();
+        allow create: if isEduversal();
+        allow update, delete: if isAdmin();
+      }
+    }
+  }
+}

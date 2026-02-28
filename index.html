@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — CentralHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ===== Design Tokens ===== */
+    :root {
+      --ink:       #1c1c2e;
+      --ink-2:     #44445a;
+      --ink-3:     #8888a8;
+      --paper:     #f7f6f3;
+      --paper-2:   #efede8;
+      --white:     #ffffff;
+      --border:    #e0ddd6;
+      --accent:    #0891b2;
+      --accent-dk: #0e7490;
+      --accent-2:  #e0f2fe;
+      --shadow-sm: 0 1px 4px rgba(28,28,46,.07);
+      --shadow:    0 3px 14px rgba(28,28,46,.10);
+      --shadow-lg: 0 10px 40px rgba(28,28,46,.16);
+      --radius:    10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ===== TOP NAV ===== */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 62px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      background: rgba(5, 5, 16, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav-brand-name {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+    }
+    .nav-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+    .nav-link:hover  { color: #fff; background: rgba(255,255,255,0.07); }
+    .nav-link.active { color: #fff; background: rgba(255,255,255,0.10); }
+
+    .nav-auth {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .nav-user-name {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.65);
+    }
+    .nav-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #0891b2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .btn-logout {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.48);
+      background: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+    .btn-logout:hover { color: #fff; border-color: rgba(255,255,255,0.28); }
+
+    /* ===== HERO ===== */
+    .hero {
+      background: linear-gradient(135deg, #0f0f1e 0%, #1a1438 55%, #0c1a2e 100%);
+      padding: 52px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 14% 65%, rgba(139, 92, 246, 0.20) 0%, transparent 52%),
+        radial-gradient(circle at 82% 18%, rgba(8, 145, 178, 0.13) 0%, transparent 48%);
+      animation: heroPulse 10s ease-in-out infinite alternate;
+    }
+    @keyframes heroPulse {
+      0%   { opacity: 0.65; transform: scale(1);    }
+      100% { opacity: 1;    transform: scale(1.04); }
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .hero-title {
+      font-family: 'Lora', serif;
+      font-size: 2.15rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .hero-date {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* ===== PAGE WRAPPER ===== */
+    .page-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 40px 64px;
+    }
+
+    /* ===== STATS ROW ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .stat-card:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+    .si-teal   { background: #e0f2fe; color: #0891b2; }
+    .si-violet { background: #ede9fe; color: #7c3aed; }
+    .si-green  { background: #d1fae5; color: #059669; }
+    .si-amber  { background: #fef3c7; color: #d97706; }
+
+    .stat-label {
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: var(--ink-3);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1;
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-sub {
+      font-size: 0.775rem;
+      color: var(--ink-3);
+    }
+
+    /* ===== DASHBOARD GRID ===== */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* ===== SECTION TITLE ===== */
+    .section-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+
+    /* ===== QUICK ACCESS CARDS ===== */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .quick-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    }
+    .quick-card:hover {
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+      border-color: #cbc7bf;
+    }
+
+    .qc-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .qi-teal   { background: #e0f2fe; color: #0891b2; }
+    .qi-violet { background: #ede9fe; color: #7c3aed; }
+    .qi-amber  { background: #fef3c7; color: #d97706; }
+    .qi-green  { background: #d1fae5; color: #059669; }
+    .qi-indigo { background: #e0e7ff; color: #4338ca; }
+    .qi-rose   { background: #ffe4e6; color: #e11d48; }
+
+    .qc-body { flex: 1; min-width: 0; }
+    .qc-title {
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .qc-desc {
+      font-size: 0.81rem;
+      color: var(--ink-3);
+      line-height: 1.45;
+    }
+    .qc-arrow {
+      color: var(--ink-3);
+      flex-shrink: 0;
+      align-self: center;
+      transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .quick-card:hover .qc-arrow { transform: translateX(3px); color: var(--accent); }
+
+    .ext-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: var(--paper-2);
+      color: var(--ink-3);
+      border-radius: 4px;
+      padding: 2px 5px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ===== ACTIVITY PANEL ===== */
+    .activity-panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .activity-head {
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .activity-head h3 {
+      font-size: 0.925rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .activity-head a {
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .activity-head a:hover { text-decoration: underline; }
+
+    .activity-list { padding: 4px 0; }
+
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--paper-2);
+      transition: background 0.15s ease;
+    }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item:hover { background: var(--paper); }
+
+    .act-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7c3aed, #0891b2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .act-body { flex: 1; min-width: 0; }
+    .act-title {
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.4;
+      margin-bottom: 3px;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .act-meta {
+      font-size: 0.775rem;
+      color: var(--ink-3);
+    }
+    .act-pin {
+      font-size: 0.68rem;
+      font-weight: 500;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-left: 6px;
+    }
+    .act-empty {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--ink-3);
+      font-size: 0.875rem;
+    }
+
+    /* ===== SKELETON LOADER ===== */
+    .skel {
+      background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper) 50%, var(--paper-2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 960px) {
+      .dash-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .hero         { padding: 36px 24px; }
+      .page-wrap    { padding: 24px 20px 48px; }
+      .hero-title   { font-size: 1.7rem; }
+      .nav-links    { display: none; }
+      .quick-grid   { grid-template-columns: 1fr; }
+      .top-nav      { gap: 16px; }
+    }
+    @media (max-width: 520px) {
+      .stats-row  { grid-template-columns: 1fr; }
+      .top-nav    { padding: 0 16px; }
+      .nav-user-name { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== TOP NAV ===== -->
+<nav class="top-nav" aria-label="Main navigation">
+  <a href="index.html" class="nav-brand">
+    <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <circle cx="16" cy="16" r="6" fill="#8b5cf6"/>
+      <circle cx="16" cy="4.5" r="3.2" fill="#6d28d9" opacity="0.9"/>
+      <circle cx="27.5" cy="22.5" r="3.2" fill="#6d28d9" opacity="0.9"/>
+      <circle cx="4.5" cy="22.5" r="3.2" fill="#6d28d9" opacity="0.9"/>
+      <line x1="16" y1="10" x2="16" y2="7.7" stroke="#c4b5fd" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="21" y1="19.4" x2="24.7" y2="21.2" stroke="#c4b5fd" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="11" y1="19.4" x2="7.3" y2="21.2" stroke="#c4b5fd" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <span class="nav-brand-name">CentralHub</span>
+  </a>
+
+  <div class="nav-links">
+    <a href="index.html"        class="nav-link active">Dashboard</a>
+    <a href="schools.html"      class="nav-link">Schools</a>
+    <a href="staff.html"        class="nav-link">Staff</a>
+    <a href="announcements.html" class="nav-link">Announcements</a>
+    <a href="messageboard.html" class="nav-link">Message Board</a>
+  </div>
+
+  <div class="nav-auth">
+    <span class="nav-user-name"></span>
+    <div class="nav-avatar" id="navAvatar" aria-hidden="true"></div>
+    <button class="btn-logout" id="logoutBtn">Sign out</button>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero" aria-label="Welcome banner">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">Central Management Portal · Eduversal Indonesia</p>
+    <h1 class="hero-title" id="heroTitle">Welcome back</h1>
+    <p class="hero-date"   id="heroDate"></p>
+  </div>
+</section>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="page-wrap">
+
+  <!-- Stats Row -->
+  <div class="stats-row" role="region" aria-label="Overview statistics">
+
+    <div class="stat-card">
+      <div class="stat-icon si-teal" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+        </svg>
+      </div>
+      <p class="stat-label">Total Schools</p>
+      <p class="stat-value" id="statSchools"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
+      <p class="stat-sub">registered institutions</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon si-violet" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <p class="stat-label">Total Staff</p>
+      <p class="stat-value" id="statStaff"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
+      <p class="stat-sub">across all schools</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon si-green" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <p class="stat-label">Active Schools</p>
+      <p class="stat-value" id="statActive"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
+      <p class="stat-sub">currently operating</p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon si-amber" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <p class="stat-label">Pending Staff</p>
+      <p class="stat-value" id="statPending"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
+      <p class="stat-sub">awaiting approval</p>
+    </div>
+
+  </div><!-- /stats-row -->
+
+  <!-- Dashboard Grid -->
+  <div class="dash-grid">
+
+    <!-- LEFT: Quick Access -->
+    <div>
+      <h2 class="section-label">Quick Access</h2>
+      <div class="quick-grid">
+
+        <a href="schools.html" class="quick-card">
+          <div class="qc-icon qi-teal" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+            </svg>
+          </div>
+          <div class="qc-body">
+            <p class="qc-title">Schools</p>
+            <p class="qc-desc">Browse and manage all registered school institutions</p>
+          </div>
+          <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+        <a href="staff.html" class="quick-card">
+          <div class="qc-icon qi-violet" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="qc-body">
+            <p class="qc-title">Staff</p>
+            <p class="qc-desc">HR records, staff profiles, and role management</p>
+          </div>
+          <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+        <a href="announcements.html" class="quick-card">
+          <div class="qc-icon qi-amber" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M10 20h4"/>
+            </svg>
+          </div>
+          <div class="qc-body">
+            <p class="qc-title">Announcements</p>
+            <p class="qc-desc">Post and manage network-wide announcements</p>
+          </div>
+          <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+        <a href="messageboard.html" class="quick-card">
+          <div class="qc-icon qi-green" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div class="qc-body">
+            <p class="qc-title">Message Board</p>
+            <p class="qc-desc">Forum discussions across all departments</p>
+          </div>
+          <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+        <!-- External: TeachersHub -->
+        <a href="#" class="quick-card" id="teachersHubLink" target="_blank" rel="noopener">
+          <div class="qc-icon qi-indigo" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <div class="qc-body">
+            <p class="qc-title">TeachersHub <span class="ext-badge">↗ ext</span></p>
+            <p class="qc-desc">Teacher planning, resources, and lesson tools</p>
+          </div>
+          <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+        <!-- External: AcademicHub -->
+        <a href="#" class="quick-card" id="academicHubLink" target="_blank" rel="noopener">
+          <div class="qc-icon qi-rose" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            </svg>
+          </div>
+          <div class="qc-body">
+            <p class="qc-title">AcademicHub <span class="ext-badge">↗ ext</span></p>
+            <p class="qc-desc">Student grades, academic records, and reporting</p>
+          </div>
+          <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+
+      </div><!-- /quick-grid -->
+    </div>
+
+    <!-- RIGHT: Activity Feed -->
+    <div>
+      <h2 class="section-label">Recent Announcements</h2>
+      <div class="activity-panel" role="region" aria-label="Recent announcements">
+        <div class="activity-head">
+          <h3>Latest Updates</h3>
+          <a href="announcements.html">View all</a>
+        </div>
+        <div class="activity-list" id="activityList">
+          <div class="act-empty">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dash-grid -->
+</div><!-- /page-wrap -->
+
+<!-- Firebase CDN (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="auth-guard.js"></script>
+
+<script>
+  // ============================================================
+  // index.html page script — runs after authReady fires
+  // ============================================================
+
+  // Set hero date immediately (no auth needed)
+  document.getElementById('heroDate').textContent = new Date().toLocaleDateString('en-GB', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  // Wait for auth-guard to confirm session
+  document.addEventListener('authReady', ({ detail: { user } }) => {
+    const firstName = user.displayName
+      ? user.displayName.split(' ')[0]
+      : 'there';
+    document.getElementById('heroTitle').textContent = `Welcome, ${firstName}`;
+
+    loadStats();
+    loadActivity();
+  });
+
+  // ----- Stats -----
+  async function loadStats() {
+    try {
+      const [schoolsSnap, staffSnap, activeSnap, pendingSnap] = await Promise.all([
+        db.collection('schools').get(),
+        db.collection('staff').get(),
+        db.collection('schools').where('status', '==', 'active').get(),
+        db.collection('staff').where('status', '==', 'pending').get(),
+      ]);
+      document.getElementById('statSchools').textContent = schoolsSnap.size;
+      document.getElementById('statStaff').textContent   = staffSnap.size;
+      document.getElementById('statActive').textContent  = activeSnap.size;
+      document.getElementById('statPending').textContent = pendingSnap.size;
+    } catch (err) {
+      console.error('Stats load error:', err);
+      ['statSchools','statStaff','statActive','statPending'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+    }
+  }
+
+  // ----- Activity / Announcements feed -----
+  async function loadActivity() {
+    const list = document.getElementById('activityList');
+    try {
+      const snap = await db.collection('announcements')
+        .orderBy('createdAt', 'desc')
+        .limit(6)
+        .get();
+
+      if (snap.empty) {
+        list.innerHTML = '<div class="act-empty">No announcements yet.</div>';
+        return;
+      }
+
+      list.innerHTML = snap.docs.map(doc => {
+        const d        = doc.data();
+        const author   = d.author || 'Admin';
+        const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+        const date     = d.createdAt?.toDate
+          ? d.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+          : '';
+        const pinTag   = d.pinned ? `<span class="act-pin">Pinned</span>` : '';
+
+        return `
+          <div class="activity-item">
+            <div class="act-avatar" aria-hidden="true">${initials}</div>
+            <div class="act-body">
+              <p class="act-title">${esc(d.title || 'Untitled')}${pinTag}</p>
+              <p class="act-meta">${esc(author)} &middot; ${date}</p>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch (err) {
+      console.error('Activity load error:', err);
+      list.innerHTML = '<div class="act-empty">Could not load announcements.</div>';
+    }
+  }
+
+  // ----- XSS-safe HTML escaping -----
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+
+</body>
+</html>
