@@ -256,11 +256,13 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="auth-guard.js"></script>
-<script>
+<script src="firebase-config.js"></script>
+<script type="module" src="auth-guard.js"></script>
+<script type="module">
+  import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc as fsDoc, query, orderBy, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  let db;
   let allStaff    = [];
   let allSchools  = [];
   let isAdmin     = false;
@@ -281,7 +283,8 @@
   };
 
   document.addEventListener('authReady', async ({ detail: { profile } }) => {
-    isAdmin = profile.role === 'admin';
+    db = window.db;
+    isAdmin = profile.role === 'central_admin';
     if (isAdmin) {
       document.getElementById('addStaffBtn').style.display = 'flex';
       document.getElementById('actionsHeader').style.display = '';
@@ -291,7 +294,7 @@
   });
 
   async function loadSchools() {
-    const snap = await db.collection('schools').orderBy('name').get();
+    const snap = await getDocs(query(collection(db, 'schools'), orderBy('name')));
     allSchools = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     // Populate school filter + drawer select
     const options = allSchools.map(s => `<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('');
@@ -301,7 +304,7 @@
 
   async function loadStaff() {
     try {
-      const snap = await db.collection('staff').get();
+      const snap = await getDocs(collection(db, 'staff'));
       allStaff = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       applyFilters();
     } catch(e) {
@@ -384,7 +387,7 @@
   // ===== Delete =====
   async function deleteStaff(id) {
     if (!confirm('Remove this staff member? This cannot be undone.')) return;
-    await db.collection('staff').doc(id).delete();
+    await deleteDoc(fsDoc(db, 'staff', id));
     allStaff = allStaff.filter(s => s.id !== id);
     applyFilters();
   }
@@ -437,10 +440,10 @@
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
       if (editingId) {
-        await db.collection('staff').doc(editingId).update(data);
+        await updateDoc(fsDoc(db, 'staff', editingId), data);
       } else {
-        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        const ref = await db.collection('staff').add(data);
+        data.createdAt = serverTimestamp();
+        const ref = await addDoc(collection(db, 'staff'), data);
         data.id = ref.id;
       }
       closeDrawer();
@@ -455,6 +458,9 @@
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  window.editStaff   = editStaff;
+  window.deleteStaff = deleteStaff;
 </script>
 </body>
 </html>

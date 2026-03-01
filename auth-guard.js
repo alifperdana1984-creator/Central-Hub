@@ -1,66 +1,108 @@
-// ============================================================
-// auth-guard.js — CentralHub
-// Load AFTER: firebase-app-compat, firebase-auth-compat,
-//             firebase-firestore-compat CDN scripts.
+// auth-guard.js — CentralHub (modular SDK v10)
+// ─────────────────────────────────────────────────────────────────
 // Include on every protected page (NOT on login.html).
-// ============================================================
+// Depends on firebase-config.js setting window.ENV before this runs.
+//
+// Allowed roles: central_admin only
+//
+// Exposes globals (set once authReady fires):
+//   window.firebaseApp   — FirebaseApp instance
+//   window.db            — Firestore instance
+//   window.auth          — Auth instance
+//   window.currentUser   — firebase.User object
+//   window.userProfile   — Firestore users/{uid} document data
+//
+// Dispatches CustomEvent 'authReady' on document when auth + profile
+// are confirmed, with detail: { user, profile }
+// ─────────────────────────────────────────────────────────────────
 
+import { initializeApp, getApps }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Roles permitted to use CentralHub
+const ALLOWED_ROLES = ['central_admin'];
+
+// Hide page content until auth is confirmed (prevents flash of content)
+document.body.style.visibility = 'hidden';
+
+// ── Initialise Firebase (guard against double-init) ──────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyA0NCwUiks96zpL8mKU4aEXq7Ad7p0l7QE",
-  authDomain: "centralhub-8727b.firebaseapp.com",
-  projectId: "centralhub-8727b",
-  storageBucket: "centralhub-8727b.firebasestorage.app",
-  messagingSenderId: "244951050014",
-  appId: "1:244951050014:web:3f310da2efcc26f4a2cb0f",
-  measurementId: "G-B5FTL2MXDQ"
+  apiKey:            window.ENV.FIREBASE_API_KEY,
+  authDomain:        window.ENV.FIREBASE_AUTH_DOMAIN,
+  projectId:         window.ENV.FIREBASE_PROJECT_ID,
+  storageBucket:     window.ENV.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: window.ENV.FIREBASE_MESSAGING_SENDER_ID,
+  appId:             window.ENV.FIREBASE_APP_ID,
 };
 
-// Guard against double-init when navigating between pages
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+const app  = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
 
-const ALLOWED_DOMAINS = ['eduversal.org'];
+window.firebaseApp = app;
+window.auth        = auth;
+window.db          = db;
 
-// Expose shared instances for page scripts
-window.db   = firebase.firestore();
-window.auth = firebase.auth();
+// ── Auth state listener ──────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
 
-// Returns true if:
-//   • email domain is in ALLOWED_DOMAINS (@eduversal.org), OR
-//   • user signed in via email/password — meaning they were manually
-//     added to Firebase Authentication by an admin (they know the password).
-// Google OAuth users with non-allowed domains are always rejected.
-function isAuthorized(user) {
-  if (ALLOWED_DOMAINS.includes(user.email.split('@')[1])) return true;
-  return user.providerData.some(p => p.providerId === 'password');
-}
-
-firebase.auth().onAuthStateChanged(async (user) => {
-  // 1. Not signed in → go to login
+  // 1. Not signed in → redirect to login
   if (!user) {
     window.location.replace('login');
     return;
   }
 
-  // 2. Not authorized (wrong domain AND not a manually-added email/password user)
-  if (!isAuthorized(user)) {
-    await firebase.auth().signOut();
-    window.location.replace('login?error=domain');
+  // 2. Fetch (or create) Firestore profile
+  let profile;
+  try {
+    const userRef  = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // First sign-in: create a minimal profile with no role assigned.
+      // A central_admin must assign the role before the user can proceed.
+      const newProfile = {
+        uid:         user.uid,
+        email:       user.email,
+        displayName: user.displayName || '',
+        photoURL:    user.photoURL    || '',
+        createdAt:   serverTimestamp(),
+      };
+      await setDoc(userRef, newProfile);
+      profile = newProfile;
+    } else {
+      profile = userSnap.data();
+    }
+  } catch (err) {
+    console.error('auth-guard: could not fetch user profile', err);
+    await signOut(auth);
+    window.location.replace('login?error=profile');
     return;
   }
 
-  // 3. Valid user — expose globally
-  window.currentUser = user;
+  // 3. Role check — must be central_admin
+  if (!ALLOWED_ROLES.includes(profile.role)) {
+    await signOut(auth);
+    window.location.replace('login?error=access');
+    return;
+  }
 
-  // --- Populate nav elements (present on all protected pages) ---
+  // 4. All checks passed — expose globals
+  window.currentUser = user;
+  window.userProfile = profile;
+
+  // ── Populate shared nav elements (present on all protected pages) ──
   const navUserName = document.querySelector('.nav-user-name');
   const navAvatar   = document.getElementById('navAvatar');
   const logoutBtn   = document.getElementById('logoutBtn');
 
   if (navUserName) {
     navUserName.textContent = user.displayName
-      ? user.displayName.split(' ')[0]   // first name only
+      ? user.displayName.split(' ')[0]
       : user.email;
   }
 
@@ -73,36 +115,14 @@ firebase.auth().onAuthStateChanged(async (user) => {
 
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async () => {
-      await firebase.auth().signOut();
+      await signOut(auth);
       window.location.href = 'login';
     });
   }
 
-  // --- Ensure Firestore user profile exists ---
-  const userRef = window.db.collection('users').doc(user.uid);
-  try {
-    const snap = await userRef.get();
-    if (!snap.exists) {
-      await userRef.set({
-        uid:         user.uid,
-        email:       user.email,
-        displayName: user.displayName || '',
-        photoURL:    user.photoURL    || '',
-        role:        'viewer',
-        school:      '',
-        createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
-      });
-      window.userProfile = { role: 'viewer' };
-    } else {
-      window.userProfile = snap.data();
-    }
-  } catch (err) {
-    console.warn('Could not fetch/create user profile:', err);
-    window.userProfile = { role: 'viewer' };
-  }
-
-  // --- Notify the page that auth + profile are ready ---
+  // 5. Show page and notify
+  document.body.style.visibility = 'visible';
   document.dispatchEvent(new CustomEvent('authReady', {
-    detail: { user, profile: window.userProfile }
+    detail: { user, profile },
   }));
 });

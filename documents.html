@@ -389,12 +389,14 @@
   </div>
 </div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="auth-guard.js"></script>
-<script>
+<script src="firebase-config.js"></script>
+<script type="module" src="auth-guard.js"></script>
+<script type="module">
+  import { collection, getDocs, addDoc, updateDoc, deleteDoc as fsDeleteDoc, doc as fsDoc, query, orderBy, where, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  let db;
+
   // ── XSS helper ──────────────────────────────────────────
   function esc(str) {
     return String(str ?? '')
@@ -441,7 +443,8 @@
 
   // ── Auth ready ───────────────────────────────────────────
   document.addEventListener('authReady', ({ detail }) => {
-    isAdmin = detail.profile?.role === 'admin';
+    db = window.db;
+    isAdmin = detail.profile?.role === 'central_admin';
     if (isAdmin) {
       addDocBtn.style.display = 'flex';
       document.querySelectorAll('.admin-actions').forEach(el => el.style.display = 'flex');
@@ -452,9 +455,7 @@
   // ── Load & render ────────────────────────────────────────
   async function loadDocuments() {
     try {
-      const snap = await window.db.collection('documents')
-        .orderBy('createdAt', 'desc')
-        .get();
+      const snap = await getDocs(query(collection(db, 'central_documents'), orderBy('createdAt', 'desc')));
       allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       updateStats();
       renderTable();
@@ -476,12 +477,12 @@
     const cat = catFilter.value;
     const typ = typeFilter.value;
     const st  = statusFilter.value;
-    return allDocs.filter(doc => {
-      if (cat && doc.category !== cat) return false;
-      if (typ && doc.type      !== typ) return false;
-      if (st  && doc.status    !== st)  return false;
+    return allDocs.filter(d => {
+      if (cat && d.category !== cat) return false;
+      if (typ && d.type      !== typ) return false;
+      if (st  && d.status    !== st)  return false;
       if (q) {
-        const haystack = (doc.docId + ' ' + doc.title + ' ' + doc.preparedBy).toLowerCase();
+        const haystack = (d.docId + ' ' + d.title + ' ' + d.preparedBy).toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -512,42 +513,42 @@
       return;
     }
 
-    tbody.innerHTML = sorted.map(doc => {
+    tbody.innerHTML = sorted.map(d => {
       const statusBadge = {
         active:   '<span class="badge badge-teal">Active</span>',
         draft:    '<span class="badge badge-amber">Draft</span>',
         archived: '<span class="badge badge-neutral">Archived</span>',
-      }[doc.status] || '<span class="badge badge-neutral">—</span>';
+      }[d.status] || '<span class="badge badge-neutral">—</span>';
 
-      const driveCell = doc.driveLink
-        ? `<a href="${esc(doc.driveLink)}" target="_blank" rel="noopener noreferrer">
+      const driveCell = d.driveLink
+        ? `<a href="${esc(d.driveLink)}" target="_blank" rel="noopener noreferrer">
              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
              Open
            </a>`
         : '<span class="no-link">—</span>';
 
-      const schools = Array.isArray(doc.schools) ? doc.schools : [];
+      const schools = Array.isArray(d.schools) ? d.schools : [];
       const schoolsCell = schools.length > 0
         ? schools.map(s => `<span class="school-pill">${esc(s.trim())}</span>`).join('')
         : '<span style="color:var(--ink-3);font-size:0.8rem;">—</span>';
 
       const adminCells = isAdmin ? `
         <td class="td-actions admin-actions" style="display:flex;">
-          <button class="btn-icon" onclick="openEditModal('${esc(doc.id)}')" title="Edit" aria-label="Edit document">
+          <button class="btn-icon" onclick="openEditModal('${esc(d.id)}')" title="Edit" aria-label="Edit document">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
           </button>
-          <button class="btn-icon btn-icon-delete" onclick="deleteDoc('${esc(doc.id)}')" title="Delete" aria-label="Delete document">
+          <button class="btn-icon btn-icon-delete" onclick="deleteDoc('${esc(d.id)}')" title="Delete" aria-label="Delete document">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
           </button>
         </td>` : '<td class="td-actions"></td>';
 
       return `<tr>
-        <td class="td-docid">${esc(doc.docId)}</td>
-        <td class="td-title">${esc(doc.title)}</td>
-        <td><span class="badge badge-violet">${esc(doc.category)}</span></td>
-        <td><span class="badge badge-neutral">${esc(doc.type)}</span></td>
-        <td><span style="font-family:'DM Mono',monospace;font-size:0.8rem;">v${esc(doc.version)}</span></td>
-        <td>${esc(doc.dateOfIssue || '—')}</td>
+        <td class="td-docid">${esc(d.docId)}</td>
+        <td class="td-title">${esc(d.title)}</td>
+        <td><span class="badge badge-violet">${esc(d.category)}</span></td>
+        <td><span class="badge badge-neutral">${esc(d.type)}</span></td>
+        <td><span style="font-family:'DM Mono',monospace;font-size:0.8rem;">v${esc(d.version)}</span></td>
+        <td>${esc(d.dateOfIssue || '—')}</td>
         <td class="td-link">${driveCell}</td>
         <td class="td-schools">${schoolsCell}</td>
         <td>${statusBadge}</td>
@@ -622,13 +623,14 @@
       return;
     }
     try {
-      const snap = await window.db.collection('documents')
-        .where('category', '==', cat)
-        .where('type', '==', typ)
-        .get();
+      const snap = await getDocs(query(
+        collection(db, 'central_documents'),
+        where('category', '==', cat),
+        where('type', '==', typ)
+      ));
       let maxSerial = 0;
-      snap.forEach(doc => {
-        const s = parseInt(doc.data().serial, 10) || 0;
+      snap.forEach(d => {
+        const s = parseInt(d.data().serial, 10) || 0;
         if (s > maxSerial) maxSerial = s;
       });
       const nextSerial = maxSerial + 1;
@@ -645,23 +647,23 @@
 
   // ── Open edit modal ──────────────────────────────────────
   function openEditModal(firestoreId) {
-    const doc = allDocs.find(d => d.id === firestoreId);
-    if (!doc) return;
+    const docData = allDocs.find(d => d.id === firestoreId);
+    if (!docData) return;
     editId     = firestoreId;
-    editSerial = doc.serial;
-    editDocId  = doc.docId;
+    editSerial = docData.serial;
+    editDocId  = docData.docId;
 
     modalTitle.textContent = 'Edit Document';
-    fTitle.value       = doc.title       || '';
-    fCategory.value    = doc.category    || '';
-    fType.value        = doc.type        || '';
-    fVersion.value     = doc.version     || '1.0';
-    fDate.value        = doc.dateOfIssue || '';
-    fStatus.value      = doc.status      || 'active';
-    fPreparedBy.value  = doc.preparedBy  || '';
-    fDriveLink.value   = doc.driveLink   || '';
-    fSchools.value     = Array.isArray(doc.schools) ? doc.schools.join(', ') : '';
-    fDescription.value = doc.description || '';
+    fTitle.value       = docData.title       || '';
+    fCategory.value    = docData.category    || '';
+    fType.value        = docData.type        || '';
+    fVersion.value     = docData.version     || '1.0';
+    fDate.value        = docData.dateOfIssue || '';
+    fStatus.value      = docData.status      || 'active';
+    fPreparedBy.value  = docData.preparedBy  || '';
+    fDriveLink.value   = docData.driveLink   || '';
+    fSchools.value     = Array.isArray(docData.schools) ? docData.schools.join(', ') : '';
+    fDescription.value = docData.description || '';
     docIdPreview.textContent = editDocId;
     openModal();
   }
@@ -700,10 +702,11 @@
         // If category or type changed, we re-compute a new serial
         const original = allDocs.find(d => d.id === editId);
         if (original && (original.category !== category || original.type !== type)) {
-          const snap = await window.db.collection('documents')
-            .where('category', '==', category)
-            .where('type', '==', type)
-            .get();
+          const snap = await getDocs(query(
+            collection(db, 'central_documents'),
+            where('category', '==', category),
+            where('type', '==', type)
+          ));
           let maxSerial = 0;
           snap.forEach(d => {
             if (d.id === editId) return; // skip self
@@ -713,17 +716,18 @@
           serial = maxSerial + 1;
           docId  = `EDU\u2013${category}\u2013${type}\u2013${String(serial).padStart(3, '0')}`;
         }
-        await window.db.collection('documents').doc(editId).update({
+        await updateDoc(fsDoc(db, 'central_documents', editId), {
           docId, title, category, type, version, dateOfIssue, status,
           preparedBy, driveLink, schools, description, serial,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
       } else {
         // New doc: compute serial
-        const snap = await window.db.collection('documents')
-          .where('category', '==', category)
-          .where('type', '==', type)
-          .get();
+        const snap = await getDocs(query(
+          collection(db, 'central_documents'),
+          where('category', '==', category),
+          where('type', '==', type)
+        ));
         let maxSerial = 0;
         snap.forEach(d => {
           const s = parseInt(d.data().serial, 10) || 0;
@@ -731,10 +735,10 @@
         });
         serial = maxSerial + 1;
         docId  = `EDU\u2013${category}\u2013${type}\u2013${String(serial).padStart(3, '0')}`;
-        await window.db.collection('documents').add({
+        await addDoc(collection(db, 'central_documents'), {
           docId, title, category, type, version, dateOfIssue, status,
           preparedBy, driveLink, schools, description, serial,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: serverTimestamp(),
         });
       }
 
@@ -754,17 +758,20 @@
 
   // ── Delete ───────────────────────────────────────────────
   async function deleteDoc(firestoreId) {
-    const doc = allDocs.find(d => d.id === firestoreId);
-    if (!doc) return;
-    if (!confirm(`Delete "${doc.docId} — ${doc.title}"?\n\nThis action cannot be undone.`)) return;
+    const docData = allDocs.find(d => d.id === firestoreId);
+    if (!docData) return;
+    if (!confirm(`Delete "${docData.docId} — ${docData.title}"?\n\nThis action cannot be undone.`)) return;
     try {
-      await window.db.collection('documents').doc(firestoreId).delete();
+      await fsDeleteDoc(fsDoc(db, 'central_documents', firestoreId));
       await loadDocuments();
     } catch (err) {
       console.error('Delete failed:', err);
       alert('Failed to delete document. See console for details.');
     }
   }
+
+  window.openEditModal = openEditModal;
+  window.deleteDoc     = deleteDoc;
 </script>
 </body>
 </html>

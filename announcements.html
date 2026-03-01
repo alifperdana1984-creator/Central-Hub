@@ -231,19 +231,23 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="auth-guard.js"></script>
-<script>
+<script src="firebase-config.js"></script>
+<script type="module" src="auth-guard.js"></script>
+<script type="module">
+  import { collection, getDocs, addDoc, updateDoc, deleteDoc,
+           doc as fsDoc, query, orderBy, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  let db;
   let allAnns   = [];
   let isAdmin   = false;
   let editingId = null;
   let currentUser = null;
 
   document.addEventListener('authReady', async ({ detail: { user, profile } }) => {
+    db = window.db;
     currentUser = user;
-    isAdmin = profile.role === 'admin';
+    isAdmin = profile.role === 'central_admin';
     if (isAdmin) document.getElementById('addAnnBtn').style.display = 'flex';
     await loadAnnouncements();
     bindControls();
@@ -252,7 +256,7 @@
   // ===== Load =====
   async function loadAnnouncements() {
     try {
-      const snap = await db.collection('announcements').orderBy('createdAt','desc').get();
+      const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt','desc')));
       allAnns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       updateStats();
       applyFilters();
@@ -348,7 +352,7 @@
   // ===== Toggle Pin =====
   async function togglePin(id, currentlyPinned) {
     try {
-      await db.collection('announcements').doc(id).update({ pinned: !currentlyPinned });
+      await updateDoc(fsDoc(db, 'announcements', id), { pinned: !currentlyPinned });
       await loadAnnouncements();
     } catch(e) { alert(e.message); }
   }
@@ -357,7 +361,7 @@
   async function deleteAnn(id) {
     if (!confirm('Delete this announcement? This cannot be undone.')) return;
     try {
-      await db.collection('announcements').doc(id).delete();
+      await deleteDoc(fsDoc(db, 'announcements', id));
       allAnns = allAnns.filter(a => a.id !== id);
       updateStats();
       applyFilters();
@@ -405,12 +409,12 @@
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
       if (editingId) {
-        await db.collection('announcements').doc(editingId).update({ title, body, pinned });
+        await updateDoc(fsDoc(db, 'announcements', editingId), { title, body, pinned });
       } else {
-        await db.collection('announcements').add({
+        await addDoc(collection(db, 'announcements'), {
           title, body, pinned,
           author:    currentUser.displayName || currentUser.email,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: serverTimestamp(),
         });
       }
       closeModal();
@@ -425,6 +429,12 @@
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // Expose onclick handlers to global scope (called from dynamic HTML)
+  window.togglePin  = togglePin;
+  window.editAnn    = editAnn;
+  window.deleteAnn  = deleteAnn;
+  window.toggleRead = toggleRead;
 </script>
 </body>
 </html>

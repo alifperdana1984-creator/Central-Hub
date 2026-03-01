@@ -665,16 +665,18 @@
   </div><!-- /dash-grid -->
 </div><!-- /page-wrap -->
 
-<!-- Firebase CDN (compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="auth-guard.js"></script>
+<script src="firebase-config.js"></script>
+<script type="module" src="auth-guard.js"></script>
 
-<script>
+<script type="module">
+  import { collection, getDocs, query, orderBy, where, limit }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
   // ============================================================
   // index.html page script — runs after authReady fires
   // ============================================================
+
+  let db;
 
   // Set hero date immediately (no auth needed)
   document.getElementById('heroDate').textContent = new Date().toLocaleDateString('en-GB', {
@@ -683,6 +685,7 @@
 
   // Wait for auth-guard to confirm session
   document.addEventListener('authReady', ({ detail: { user } }) => {
+    db = window.db;
     const firstName = user.displayName
       ? user.displayName.split(' ')[0]
       : 'there';
@@ -696,10 +699,10 @@
   async function loadStats() {
     try {
       const [schoolsSnap, staffSnap, activeSnap, pendingSnap] = await Promise.all([
-        db.collection('schools').get(),
-        db.collection('staff').get(),
-        db.collection('schools').where('status', '==', 'active').get(),
-        db.collection('staff').where('status', '==', 'pending').get(),
+        getDocs(collection(db, 'schools')),
+        getDocs(collection(db, 'staff')),
+        getDocs(query(collection(db, 'schools'), where('status', '==', 'active'))),
+        getDocs(query(collection(db, 'staff'), where('status', '==', 'pending'))),
       ]);
       document.getElementById('statSchools').textContent = schoolsSnap.size;
       document.getElementById('statStaff').textContent   = staffSnap.size;
@@ -717,18 +720,17 @@
   async function loadActivity() {
     const list = document.getElementById('activityList');
     try {
-      const snap = await db.collection('announcements')
-        .orderBy('createdAt', 'desc')
-        .limit(6)
-        .get();
+      const snap = await getDocs(
+        query(collection(db, 'announcements'), orderBy('createdAt', 'desc'), limit(6))
+      );
 
       if (snap.empty) {
         list.innerHTML = '<div class="act-empty">No announcements yet.</div>';
         return;
       }
 
-      list.innerHTML = snap.docs.map(doc => {
-        const d        = doc.data();
+      list.innerHTML = snap.docs.map(docSnap => {
+        const d        = docSnap.data();
         const author   = d.author || 'Admin';
         const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
         const date     = d.createdAt?.toDate

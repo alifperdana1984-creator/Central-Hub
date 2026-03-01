@@ -57,8 +57,8 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
-    // ── documents ──────────────────────────────────────────
-    match /documents/{docId} {
+    // ── central_documents ──────────────────────────────────
+    match /central_documents/{docId} {
       allow read:   if isAuthorized();
       allow create, update, delete: if isAdmin();
     }

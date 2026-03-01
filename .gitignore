@@ -13,7 +13,6 @@ Thumbs.db
 .firebase/
 .firebaserc
 
-# Secrets — never commit real API keys
-# (the firebaseConfig in this project uses client-side keys which are
-#  safe to expose publicly; they are locked down by Firebase Security Rules
-#  and domain restrictions in the Firebase console)
+# Secrets — never commit real credentials
+firebase-config.js
+keys/
