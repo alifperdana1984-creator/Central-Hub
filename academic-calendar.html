@@ -283,8 +283,21 @@
   const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
+  // Normalise any date string to "YYYY-MM-DD"
+  // Handles both "2025-07-04" and "Fri Jul 04 2025 00:00:00 GMT+0700 (Indochina Time)"
+  function normalizeDate(str) {
+    if (!str) return null;
+    const s = String(str);
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const MONTH_MAP = {Jan:"01",Feb:"02",Mar:"03",Apr:"04",May:"05",Jun:"06",Jul:"07",Aug:"08",Sep:"09",Oct:"10",Nov:"11",Dec:"12"};
+    const m = s.match(/(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+    if (m && MONTH_MAP[m[1]]) return `${m[3]}-${MONTH_MAP[m[1]]}-${String(m[2]).padStart(2,"0")}`;
+    return null;
+  }
+
   function parseDate(str) {
-    const [y, m, d] = String(str).slice(0, 10).split("-").map(Number);
+    const s = normalizeDate(str) || String(str).slice(0, 10);
+    const [y, m, d] = s.split("-").map(Number);
     return new Date(y, m - 1, d);
   }
   function isoDate(date) {
@@ -354,7 +367,9 @@
         .then(data => {
           console.log('[Calendar] API rows:', Array.isArray(data) ? data.length : typeof data);
           console.log('[Calendar] Sample:', JSON.stringify(data?.[0]));
-          if (Array.isArray(data) && data.length > 0) setEvents(data);
+          if (Array.isArray(data) && data.length > 0) {
+            setEvents(data.map(e => e ? { ...e, date_start: normalizeDate(e.date_start) || e.date_start, date_end: normalizeDate(e.date_end) || e.date_end } : e));
+          }
           setLoading(false);
         })
         .catch(err => {
