@@ -284,7 +284,7 @@
   const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
   function parseDate(str) {
-    const [y, m, d] = str.split("-").map(Number);
+    const [y, m, d] = String(str).slice(0, 10).split("-").map(Number);
     return new Date(y, m - 1, d);
   }
   function isoDate(date) {
