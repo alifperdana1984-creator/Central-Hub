@@ -16,3 +16,6 @@ Thumbs.db
 # Secrets — never commit real credentials
 firebase-config.js
 keys/
+
+# Local assets
+resources/

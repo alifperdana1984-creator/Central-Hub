@@ -33,6 +33,10 @@ service cloud.firestore {
       return isAuthorized() && userProfile().role == 'central_admin';
     }
 
+    function isModerator() {
+      return isAuthorized() && (userProfile().role == 'central_admin' || userProfile().role == 'academic_coordinator');
+    }
+
     // ── users ──────────────────────────────────────────────
     match /users/{uid} {
       allow read:  if isAuthorized() && (request.auth.uid == uid || isAdmin());
@@ -71,6 +75,19 @@ service cloud.firestore {
     match /central_documents/{docId} {
       allow read:   if isAuthorized();
       allow create, update, delete: if isAdmin();
+    }
+
+    // ── timeline_activities (Academic Calendar) ────────────
+    match /timeline_activities/{actId} {
+      allow read:   if isAuthorized();
+      allow create, update: if isModerator();
+      allow delete: if isAdmin();
+    }
+
+    // ── timeline_completions (Academic Calendar) ───────────
+    match /timeline_completions/{compId} {
+      allow read:   if isAuthorized();
+      allow write:  if isAuthorized() && request.resource.data.userId == request.auth.uid;
     }
 
     // ── topics (message board) ─────────────────────────────
