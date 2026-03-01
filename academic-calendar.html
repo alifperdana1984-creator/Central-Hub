@@ -387,8 +387,8 @@
     const upcomingEvents = useMemo(() => {
       const todayStr = isoDate(today);
       return filteredEvents
-        .filter(e => e.date_end >= todayStr)
-        .sort((a, b) => a.date_start.localeCompare(b.date_start))
+        .filter(e => e.date_start && e.date_end && String(e.date_end).slice(0, 10) >= todayStr)
+        .sort((a, b) => String(a.date_start).localeCompare(String(b.date_start)))
         .slice(0, 30);
     }, [filteredEvents]);
 
@@ -537,10 +537,11 @@
             )}
             {upcomingEvents.map((e, i) => {
               const style      = getEventStyle(e);
-              const sameAsLast = i > 0 && upcomingEvents[i-1].date_start.slice(0,7) === e.date_start.slice(0,7);
+              const ds = String(e.date_start).slice(0, 10);
+              const sameAsLast = i > 0 && String(upcomingEvents[i-1].date_start).slice(0,7) === ds.slice(0,7);
               const monthLabel = !sameAsLast ? (
                 <div style={{ fontSize: 12, fontWeight: 800, color: "#64748B", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: i > 0 ? 24 : 0, marginBottom: 8 }}>
-                  {MONTHS[parseInt(e.date_start.split("-")[1])-1]} {e.date_start.split("-")[0]}
+                  {MONTHS[parseInt(ds.split("-")[1])-1]} {ds.split("-")[0]}
                 </div>
               ) : null;
               return (
@@ -554,13 +555,13 @@
                   }}>
                     <div style={{ minWidth: 70, textAlign: "center" }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>
-                        {MONTHS[parseInt(e.date_start.split("-")[1])-1].slice(0,3)}
+                        {MONTHS[parseInt(ds.split("-")[1])-1].slice(0,3)}
                       </div>
                       <div style={{ fontSize: 20, fontWeight: 900, color: "#0F172A", lineHeight: 1 }}>
-                        {e.date_start.split("-")[2]}
+                        {ds.split("-")[2]}
                       </div>
                       {e.date_start !== e.date_end && (
-                        <div style={{ fontSize: 10, color: "#94A3B8" }}>– {e.date_end.split("-")[2]}</div>
+                        <div style={{ fontSize: 10, color: "#94A3B8" }}>– {String(e.date_end).slice(8,10)}</div>
                       )}
                     </div>
                     <div style={{ flex: 1 }}>
@@ -614,10 +615,10 @@
                         borderRadius: 10, padding: "10px 14px", textAlign: "center", minWidth: 60,
                       }}>
                         <div style={{ fontSize: 10, fontWeight: 800, color: style.color, textTransform: "uppercase" }}>
-                          {MONTHS[parseInt(selectedEvent.date_start.split("-")[1])-1].slice(0,3)}
+                          {MONTHS[parseInt(String(selectedEvent.date_start).slice(5,7))-1].slice(0,3)}
                         </div>
                         <div style={{ fontSize: 24, fontWeight: 900, color: "#0F172A" }}>
-                          {selectedEvent.date_start.split("-")[2]}
+                          {String(selectedEvent.date_start).slice(8,10)}
                         </div>
                       </div>
                       <div>
