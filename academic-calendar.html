@@ -416,6 +416,24 @@
         .slice(0, 30);
     }, [filteredEvents]);
 
+    const yearStats = useMemo(() => {
+      const deptCount = {};
+      const catCount  = {};
+      let total = 0;
+      events.forEach(e => {
+        if (!e || !e.date_start) return;
+        total++;
+        deptCount[e.department] = (deptCount[e.department] || 0) + 1;
+        catCount[e.category]    = (catCount[e.category]    || 0) + 1;
+      });
+      return { deptCount, catCount, total };
+    }, [events]);
+
+    const allEventsSorted = useMemo(() =>
+      events.filter(e => e && e.date_start)
+            .sort((a, b) => String(a.date_start).localeCompare(String(b.date_start))),
+    [events]);
+
     const toggleFilter = (key, setFn) => setFn(prev => {
       const next = new Set(prev);
       next.has(key) ? next.delete(key) : next.add(key);
@@ -442,7 +460,7 @@
             </div>
             {/* View Toggle */}
             <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: 4 }}>
-              {[["month", "📅 Month"], ["list", "📋 List"]].map(([v, label]) => (
+              {[["month", "📅 Month"], ["list", "📋 List"], ["all", "📊 All Events"]].map(([v, label]) => (
                 <button key={v} onClick={() => setView(v)} style={{
                   padding: "7px 16px", borderRadius: 7, border: "none", cursor: "pointer",
                   background: view === v ? "white" : "transparent",
@@ -602,15 +620,119 @@
           </div>
         )}
 
-        {/* Legend */}
-        <div style={{ padding: "0 32px 32px", display: "flex", gap: 20, flexWrap: "wrap" }}>
+        {/* All Events View */}
+        {view === "all" && (
+          <div style={{ padding: "28px 32px 40px", maxWidth: 960, margin: "0 auto" }}>
+
+            {/* Stat Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 28 }}>
+              <div style={{ background: "white", borderRadius: 12, padding: "20px", border: "1px solid #E2E8F0", textAlign: "center" }}>
+                <div style={{ fontSize: 44, fontWeight: 900, color: "#0F172A", lineHeight: 1 }}>{yearStats.total}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", marginTop: 8, textTransform: "uppercase", letterSpacing: "0.1em" }}>Total Events</div>
+              </div>
+              {Object.entries(DEPARTMENTS).map(([key, cfg]) => (
+                <div key={key} style={{ background: cfg.bg, borderRadius: 12, padding: "20px", border: `1px solid ${cfg.border}`, textAlign: "center" }}>
+                  <div style={{ fontSize: 44, fontWeight: 900, color: cfg.color, lineHeight: 1 }}>{yearStats.deptCount[key] || 0}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: cfg.color, marginTop: 8, opacity: 0.8, textTransform: "uppercase", letterSpacing: "0.07em" }}>{cfg.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Department Distribution Bar */}
+            <div style={{ background: "white", borderRadius: 12, border: "1px solid #E2E8F0", padding: "22px 24px", marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 18 }}>Activity Distribution by Department</div>
+              {Object.entries(DEPARTMENTS).map(([key, cfg]) => {
+                const count = yearStats.deptCount[key] || 0;
+                const pct   = yearStats.total ? Math.round(count / yearStats.total * 100) : 0;
+                return (
+                  <div key={key} style={{ marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
+                      <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>{count} events &middot; {pct}%</span>
+                    </div>
+                    <div style={{ height: 10, background: "#F1F5F9", borderRadius: 6, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: cfg.color, borderRadius: 6 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Category Breakdown */}
+            <div style={{ background: "white", borderRadius: 12, border: "1px solid #E2E8F0", padding: "22px 24px", marginBottom: 28 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 16 }}>Events by Category</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {Object.entries(yearStats.catCount).sort((a, b) => b[1] - a[1]).map(([cat, count]) => {
+                  const override = CATEGORY_OVERRIDES[cat];
+                  const color = override ? override.color : "#334155";
+                  const bg    = override ? override.bg    : "#F1F5F9";
+                  const border = override ? override.border : "#E2E8F0";
+                  return (
+                    <div key={cat} style={{ display: "flex", alignItems: "center", gap: 8, background: bg, borderRadius: 8, padding: "8px 14px", border: `1px solid ${border}` }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color }}>{cat}</span>
+                      <span style={{ fontSize: 20, fontWeight: 900, color, lineHeight: 1 }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Full Chronological List */}
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 16 }}>
+              All {yearStats.total} Events — Chronological
+            </div>
+            {allEventsSorted.map((e, i) => {
+              const style = getEventStyle(e);
+              const ds = String(e.date_start).slice(0, 10);
+              const sameAsLast = i > 0 && String(allEventsSorted[i-1].date_start).slice(0,7) === ds.slice(0,7);
+              const monthLabel = !sameAsLast ? (
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#64748B", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: i > 0 ? 24 : 0, marginBottom: 8 }}>
+                  {MONTHS[parseInt(ds.split("-")[1])-1]} {ds.split("-")[0]}
+                </div>
+              ) : null;
+              return (
+                <div key={e.id || i}>
+                  {monthLabel}
+                  <div onClick={() => setSelectedEvent(e)} style={{
+                    display: "flex", gap: 16, alignItems: "flex-start",
+                    padding: "12px 16px", background: "white",
+                    border: "1px solid #E2E8F0", borderLeft: `4px solid ${style.dot}`,
+                    borderRadius: 10, marginBottom: 6, cursor: "pointer",
+                  }}>
+                    <div style={{ minWidth: 70, textAlign: "center", flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>
+                        {MONTHS[parseInt(ds.split("-")[1])-1].slice(0,3)}
+                      </div>
+                      <div style={{ fontSize: 20, fontWeight: 900, color: "#0F172A", lineHeight: 1 }}>
+                        {ds.split("-")[2]}
+                      </div>
+                      {e.date_start !== e.date_end && (
+                        <div style={{ fontSize: 10, color: "#94A3B8" }}>– {String(e.date_end).slice(8,10)}</div>
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, color: "#0F172A", fontSize: 14, marginBottom: 4 }}>{e.title}</div>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <Tag color={style.color} bg={style.bg}>{e.department}</Tag>
+                        <Tag color="#64748B" bg="#F1F5F9">{e.category}</Tag>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Legend — shown only in month/list views */}
+        {view !== "all" && <div style={{ padding: "0 32px 32px", display: "flex", gap: 20, flexWrap: "wrap" }}>
           {Object.entries(DEPARTMENTS).map(([key, cfg]) => (
             <LegendItem key={key} color={cfg.color} label={cfg.label} />
           ))}
           {Object.entries(CATEGORY_OVERRIDES).map(([key, cfg]) => (
             <LegendItem key={key} color={cfg.color} label={key} />
           ))}
-        </div>
+        </div>}
 
         {/* Event Modal */}
         {selectedEvent && (
