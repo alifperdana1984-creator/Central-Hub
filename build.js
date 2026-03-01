@@ -48,6 +48,7 @@ const htmlFiles = [
   "staff.html",
   "documents.html",
   "login.html",
+  "academic-calendar.html",
 ];
 
 htmlFiles.forEach((file) => {
