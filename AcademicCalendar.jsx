@@ -154,7 +154,7 @@ export default function AcademicCalendar() {
     setLoading(true);
     fetch(SHEETS_API_URL)
       .then(r => r.json())
-      .then(data => { setEvents(data); setLoading(false); })
+      .then(data => { if (Array.isArray(data) && data.length > 0) setEvents(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
