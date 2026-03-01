@@ -30,7 +30,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthorized() && userProfile().role == 'admin';
+      return isAuthorized() && userProfile().role == 'central_admin';
     }
 
     // ── users ──────────────────────────────────────────────

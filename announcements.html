@@ -82,8 +82,25 @@
 
     /* BADGES */
     .badge { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-    .badge-amber { background: #fef3c7; color: #92400e; }
-    .badge-teal  { background: #e0f2fe; color: #0e7490; }
+    .badge-amber  { background: #fef3c7; color: #92400e; }
+    .badge-teal   { background: #e0f2fe; color: #0e7490; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+
+    /* PLATFORM CHECKBOXES (modal) */
+    .platform-checks { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 2px; }
+    .platform-check-item { display: flex; align-items: center; gap: 7px; font-size: 0.875rem; color: var(--ink-2); cursor: pointer; user-select: none; }
+    .platform-check-item input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+    /* PLATFORM CHIPS (card list) */
+    .ann-platforms { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+    .plat-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid transparent; }
+    .plat-chip svg { flex-shrink: 0; }
+    .plat-on-central  { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+    .plat-on-academic { background: #e0f2fe; color: #0e7490; border-color: #7dd3fc; }
+    .plat-on-teachers { background: #dcfce7; color: #166534; border-color: #86efac; }
+    .plat-off { background: var(--paper-2); color: var(--ink-3); border-color: var(--border); opacity: 0.55; }
 
     /* EMPTY / SKELETON */
     .empty-state { padding: 60px; text-align: center; color: var(--ink-3); font-size: 0.9rem; }
@@ -223,6 +240,23 @@
         <input type="checkbox" id="fieldPinned">
         Pin this announcement to the top
       </label>
+      <div class="form-group">
+        <label class="form-label">Publish to</label>
+        <div class="platform-checks">
+          <label class="platform-check-item">
+            <input type="checkbox" id="platCentral" checked>
+            CentralHub
+          </label>
+          <label class="platform-check-item">
+            <input type="checkbox" id="platAcademic">
+            Academic Hub
+          </label>
+          <label class="platform-check-item">
+            <input type="checkbox" id="platTeachers">
+            Teachers Hub
+          </label>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" id="cancelBtn">Cancel</button>
@@ -257,7 +291,9 @@
   async function loadAnnouncements() {
     try {
       const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt','desc')));
-      allAnns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Show all announcements that target centralhub, or legacy ones with no platforms field
+      allAnns = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                         .filter(a => !a.platforms || a.platforms.includes('centralhub'));
       updateStats();
       applyFilters();
     } catch(e) {
@@ -306,6 +342,20 @@
       const initials = author.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       const pinClass = a.pinned ? ' pinned' : '';
       const pinBadge = a.pinned ? '<span class="badge badge-amber">Pinned</span>' : '';
+      const plats = a.platforms || ['centralhub'];
+      const checkOn  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const checkOff = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      const platBadges = [
+        plats.includes('centralhub')
+          ? `<span class="plat-chip plat-on-central">${checkOn} CentralHub</span>`
+          : `<span class="plat-chip plat-off">${checkOff} CentralHub</span>`,
+        plats.includes('academichub')
+          ? `<span class="plat-chip plat-on-academic">${checkOn} Academic Hub</span>`
+          : `<span class="plat-chip plat-off">${checkOff} Academic Hub</span>`,
+        plats.includes('teachershub')
+          ? `<span class="plat-chip plat-on-teachers">${checkOn} Teachers Hub</span>`
+          : `<span class="plat-chip plat-off">${checkOff} Teachers Hub</span>`,
+      ].join('');
       const adminActions = isAdmin ? `
         <div class="admin-actions visible">
           <button class="btn-icon ${a.pinned?'pin-active':''}" onclick="togglePin('${a.id}',${!!a.pinned})" aria-label="${a.pinned?'Unpin':'Pin'} announcement" title="${a.pinned?'Unpin':'Pin'}">
@@ -329,6 +379,7 @@
             ${adminActions}
           </div>
           <p class="ann-body truncated" id="body-${a.id}">${esc(a.body||'').replace(/\n/g,'<br>')}</p>
+          <div class="ann-platforms">${platBadges}</div>
           <div class="ann-footer">
             <div class="ann-author">
               <div class="ann-avatar" aria-hidden="true">${initials}</div>
@@ -375,6 +426,9 @@
     document.getElementById('fieldTitle').value  = '';
     document.getElementById('fieldBody').value   = '';
     document.getElementById('fieldPinned').checked = false;
+    document.getElementById('platCentral').checked  = true;
+    document.getElementById('platAcademic').checked = false;
+    document.getElementById('platTeachers').checked = false;
     document.getElementById('saveBtn').textContent = 'Publish';
     hideErr();
     document.getElementById('modalOverlay').classList.add('open');
@@ -389,6 +443,10 @@
     document.getElementById('fieldTitle').value   = a.title  || '';
     document.getElementById('fieldBody').value    = a.body   || '';
     document.getElementById('fieldPinned').checked = !!a.pinned;
+    const plats = a.platforms || ['centralhub'];
+    document.getElementById('platCentral').checked  = plats.includes('centralhub');
+    document.getElementById('platAcademic').checked = plats.includes('academichub');
+    document.getElementById('platTeachers').checked = plats.includes('teachershub');
     document.getElementById('saveBtn').textContent = 'Update';
     hideErr();
     document.getElementById('modalOverlay').classList.add('open');
@@ -405,14 +463,20 @@
     const pinned = document.getElementById('fieldPinned').checked;
     if (!title || !body) { showErr('Title and content are required.'); return; }
 
+    const platforms = [];
+    if (document.getElementById('platCentral').checked)  platforms.push('centralhub');
+    if (document.getElementById('platAcademic').checked) platforms.push('academichub');
+    if (document.getElementById('platTeachers').checked) platforms.push('teachershub');
+    if (!platforms.length) { showErr('At least one platform must be selected.'); return; }
+
     const btn = document.getElementById('saveBtn');
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
       if (editingId) {
-        await updateDoc(fsDoc(db, 'announcements', editingId), { title, body, pinned });
+        await updateDoc(fsDoc(db, 'announcements', editingId), { title, body, pinned, platforms });
       } else {
         await addDoc(collection(db, 'announcements'), {
-          title, body, pinned,
+          title, body, pinned, platforms,
           author:    currentUser.displayName || currentUser.email,
           createdAt: serverTimestamp(),
         });
