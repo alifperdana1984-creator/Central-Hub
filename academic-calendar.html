@@ -351,8 +351,16 @@
       setLoading(true);
       fetch(SHEETS_API_URL)
         .then(r => r.json())
-        .then(data => { if (Array.isArray(data) && data.length > 0) setEvents(data); setLoading(false); })
-        .catch(() => setLoading(false));
+        .then(data => {
+          console.log('[Calendar] API rows:', Array.isArray(data) ? data.length : typeof data);
+          console.log('[Calendar] Sample:', JSON.stringify(data?.[0]));
+          if (Array.isArray(data) && data.length > 0) setEvents(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('[Calendar] Fetch error:', err);
+          setLoading(false);
+        });
     }, []);
 
     const prevMonth = () => {
