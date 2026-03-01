@@ -365,6 +365,7 @@
     };
 
     const filteredEvents = useMemo(() => events.filter(e => {
+      if (!e || !e.date_start || !e.date_end) return false;
       if (CATEGORY_OVERRIDES[e.category]) return activeCategoryFilters.has(e.category);
       return activeFilters.has(e.department);
     }), [events, activeFilters, activeCategoryFilters]);
