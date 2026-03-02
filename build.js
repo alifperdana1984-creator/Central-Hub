@@ -52,6 +52,7 @@ const htmlFiles = [
   "appraisals.html",
   "academics.html",
   "assessments.html",
+  "console.html",
 ];
 
 htmlFiles.forEach((file) => {
