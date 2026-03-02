@@ -158,15 +158,15 @@ onAuthStateChanged(auth, async (user) => {
   window.currentUser = user;
   window.userProfile = profile;
 
-  // ── Show Console nav link for central_admin ──────────────────────
+  // ── Show Console nav link for central_admin (right side of nav) ──
   if (platformRole === 'central_admin') {
-    const navLinks = document.querySelector('.nav-links');
-    if (navLinks && !navLinks.querySelector('a[href="console"]')) {
+    const navAuth = document.querySelector('.nav-auth');
+    if (navAuth && !navAuth.querySelector('a[href="console"]')) {
       const link = document.createElement('a');
       link.href        = 'console';
       link.className   = 'nav-link';
       link.textContent = 'Console';
-      navLinks.appendChild(link);
+      navAuth.insertBefore(link, navAuth.firstChild);
     }
   }
 
