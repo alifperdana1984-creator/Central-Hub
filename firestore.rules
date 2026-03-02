@@ -39,8 +39,11 @@ service cloud.firestore {
 
     // ── users ──────────────────────────────────────────────
     match /users/{uid} {
-      allow read:  if isAuthorized() && (request.auth.uid == uid || isAdmin());
-      allow write: if isAuthorized() && (request.auth.uid == uid || isAdmin());
+      // Any authorised user can read their own doc; admins can read all
+      allow get:    if isAuthorized() && (request.auth.uid == uid || isAdmin());
+      // List (collection query) is admin-only to avoid per-doc get() loops
+      allow list:   if isAdmin();
+      allow write:  if isAuthorized() && (request.auth.uid == uid || isAdmin());
     }
 
     // ── schools ────────────────────────────────────────────
