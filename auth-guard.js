@@ -71,6 +71,7 @@ onAuthStateChanged(auth, async (user) => {
         displayName: user.displayName || '',
         photoURL:    user.photoURL    || '',
         role:        'central_user',
+        platform:    'centralhub',
         createdAt:   serverTimestamp(),
       };
       await setDoc(userRef, newProfile);
@@ -95,6 +96,18 @@ onAuthStateChanged(auth, async (user) => {
   // 4. All checks passed — expose globals
   window.currentUser = user;
   window.userProfile = profile;
+
+  // ── Show Console nav link for central_admin ──────────────────────
+  if (profile.role === 'central_admin') {
+    const navLinks = document.querySelector('.nav-links');
+    if (navLinks && !navLinks.querySelector('a[href="console"]')) {
+      const link = document.createElement('a');
+      link.href      = 'console';
+      link.className = 'nav-link';
+      link.textContent = 'Console';
+      navLinks.appendChild(link);
+    }
+  }
 
   // ── Populate shared nav elements (present on all protected pages) ──
   const navUserName = document.querySelector('.nav-user-name');
