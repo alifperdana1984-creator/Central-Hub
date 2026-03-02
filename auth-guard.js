@@ -3,7 +3,7 @@
 // Include on every protected page (NOT on login.html).
 // Depends on firebase-config.js setting window.ENV before this runs.
 //
-// Allowed roles: central_admin only
+// Allowed roles: central_admin, central_user
 //
 // Exposes globals (set once authReady fires):
 //   window.firebaseApp   — FirebaseApp instance
@@ -47,6 +47,40 @@ window.firebaseApp = app;
 window.auth        = auth;
 window.db          = db;
 
+// ── Name prompt (shown when displayName is missing) ───────────────
+function promptForName() {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(28,28,46,0.75);display:flex;align-items:center;justify-content:center;padding:24px;font-family:"DM Sans",sans-serif';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.35)">
+        <h2 style="font-size:1.4rem;font-weight:600;color:#1c1c2e;margin-bottom:6px">Welcome!</h2>
+        <p style="font-size:0.875rem;color:#8888a8;margin-bottom:24px">Please enter your full name to complete your profile.</p>
+        <input id="_nameInput" type="text" placeholder="Your full name"
+          style="width:100%;padding:10px 14px;border:1px solid #e0ddd6;border-radius:8px;font-size:0.95rem;color:#1c1c2e;outline:none;margin-bottom:8px;box-sizing:border-box">
+        <p id="_nameErr" style="font-size:0.82rem;color:#dc2626;min-height:20px;margin-bottom:12px"></p>
+        <button id="_nameBtn" style="width:100%;padding:11px;background:linear-gradient(135deg,#7c3aed,#0891b2);color:#fff;border:none;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer">Continue →</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.body.style.visibility = 'visible';
+
+    const input = overlay.querySelector('#_nameInput');
+    const btn   = overlay.querySelector('#_nameBtn');
+    const err   = overlay.querySelector('#_nameErr');
+    input.focus();
+
+    const submit = () => {
+      const name = input.value.trim();
+      if (!name) { err.textContent = 'Please enter your name.'; return; }
+      overlay.remove();
+      document.body.style.visibility = 'hidden';
+      resolve(name);
+    };
+    btn.addEventListener('click', submit);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  });
+}
+
 // ── Auth state listener ──────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
 
@@ -58,13 +92,12 @@ onAuthStateChanged(auth, async (user) => {
 
   // 2. Fetch (or create) Firestore profile
   let profile;
+  const userRef = doc(db, 'users', user.uid);
   try {
-    const userRef  = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // First sign-in: auto-assign central_user role so @eduversal.org
-      // staff can access all pages immediately. central_admin is set manually.
+      // First sign-in: auto-assign central_user. central_admin is set manually.
       const newProfile = {
         uid:         user.uid,
         email:       user.email,
@@ -86,14 +119,21 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // 3. Role check — must be central_admin
+  // 3. Role check
   if (!ALLOWED_ROLES.includes(profile.role)) {
     await signOut(auth);
     window.location.replace('login?error=access');
     return;
   }
 
-  // 4. All checks passed — expose globals
+  // 4. Name prompt if missing
+  if (!profile.displayName) {
+    const name = await promptForName();
+    await setDoc(userRef, { displayName: name }, { merge: true });
+    profile.displayName = name;
+  }
+
+  // 5. All checks passed — expose globals
   window.currentUser = user;
   window.userProfile = profile;
 
@@ -102,27 +142,28 @@ onAuthStateChanged(auth, async (user) => {
     const navLinks = document.querySelector('.nav-links');
     if (navLinks && !navLinks.querySelector('a[href="console"]')) {
       const link = document.createElement('a');
-      link.href      = 'console';
-      link.className = 'nav-link';
+      link.href        = 'console';
+      link.className   = 'nav-link';
       link.textContent = 'Console';
       navLinks.appendChild(link);
     }
   }
 
-  // ── Populate shared nav elements (present on all protected pages) ──
+  // ── Populate shared nav elements ─────────────────────────────────
+  const displayName = profile.displayName || user.displayName;
   const navUserName = document.querySelector('.nav-user-name');
   const navAvatar   = document.getElementById('navAvatar');
   const logoutBtn   = document.getElementById('logoutBtn');
 
   if (navUserName) {
-    navUserName.textContent = user.displayName
-      ? user.displayName.split(' ')[0]
+    navUserName.textContent = displayName
+      ? displayName.split(' ')[0]
       : user.email;
   }
 
   if (navAvatar) {
-    const initials = user.displayName
-      ? user.displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    const initials = displayName
+      ? displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
       : user.email[0].toUpperCase();
     navAvatar.textContent = initials;
   }
@@ -134,7 +175,7 @@ onAuthStateChanged(auth, async (user) => {
     });
   }
 
-  // 5. Show page and notify
+  // 6. Show page and notify
   document.body.style.visibility = 'visible';
   document.dispatchEvent(new CustomEvent('authReady', {
     detail: { user, profile },

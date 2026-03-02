@@ -171,8 +171,10 @@
       <option value="">All roles</option>
       <option value="central_admin">central_admin</option>
       <option value="central_user">central_user</option>
-      <option value="academic_coordinator">academic_coordinator</option>
-      <option value="teacher">teacher</option>
+      <option value="academic_admin">academic_admin</option>
+      <option value="academic_user">academic_user</option>
+      <option value="teachers_admin">teachers_admin</option>
+      <option value="teachers_user">teachers_user</option>
     </select>
     <select class="filter-select" id="platformFilter" aria-label="Filter by platform">
       <option value="">All platforms</option>
@@ -233,8 +235,10 @@
         <select class="form-select" id="fieldRole">
           <option value="central_admin">central_admin</option>
           <option value="central_user">central_user</option>
-          <option value="academic_coordinator">academic_coordinator</option>
-          <option value="teacher">teacher</option>
+          <option value="academic_admin">academic_admin</option>
+          <option value="academic_user">academic_user</option>
+          <option value="teachers_admin">teachers_admin</option>
+          <option value="teachers_user">teachers_user</option>
         </select>
       </div>
       <div class="form-group">
@@ -264,10 +268,12 @@
   let editingId = null;
 
   const ROLE_BADGE = {
-    central_admin:        '<span class="badge badge-admin">central_admin</span>',
-    central_user:         '<span class="badge badge-cuser">central_user</span>',
-    academic_coordinator: '<span class="badge badge-coord">academic_coordinator</span>',
-    teacher:              '<span class="badge badge-teacher">teacher</span>',
+    central_admin:   '<span class="badge badge-admin">central_admin</span>',
+    central_user:    '<span class="badge badge-cuser">central_user</span>',
+    academic_admin:  '<span class="badge badge-coord">academic_admin</span>',
+    academic_user:   '<span class="badge badge-teacher">academic_user</span>',
+    teachers_admin:  '<span class="badge badge-academic">teachers_admin</span>',
+    teachers_user:   '<span class="badge badge-teachers">teachers_user</span>',
   };
 
   const PLATFORM_BADGE = {

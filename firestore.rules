@@ -34,7 +34,11 @@ service cloud.firestore {
     }
 
     function isModerator() {
-      return isAuthorized() && (userProfile().role == 'central_admin' || userProfile().role == 'academic_coordinator');
+      return isAuthorized() && (
+        userProfile().role == 'central_admin'  ||
+        userProfile().role == 'academic_admin' ||
+        userProfile().role == 'academic_user'
+      );
     }
 
     // ── users ──────────────────────────────────────────────
