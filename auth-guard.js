@@ -24,7 +24,7 @@ import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Roles permitted to use CentralHub
-const ALLOWED_ROLES = ['central_admin'];
+const ALLOWED_ROLES = ['central_admin', 'central_user'];
 
 // Hide page content until auth is confirmed (prevents flash of content)
 document.body.style.visibility = 'hidden';
@@ -63,13 +63,14 @@ onAuthStateChanged(auth, async (user) => {
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // First sign-in: create a minimal profile with no role assigned.
-      // A central_admin must assign the role before the user can proceed.
+      // First sign-in: auto-assign central_user role so @eduversal.org
+      // staff can access all pages immediately. central_admin is set manually.
       const newProfile = {
         uid:         user.uid,
         email:       user.email,
         displayName: user.displayName || '',
         photoURL:    user.photoURL    || '',
+        role:        'central_user',
         createdAt:   serverTimestamp(),
       };
       await setDoc(userRef, newProfile);

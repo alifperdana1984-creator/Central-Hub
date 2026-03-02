@@ -293,7 +293,8 @@
 
   // If already signed in and authorized → go straight to dashboard
   onAuthStateChanged(auth, user => {
-    if (new URLSearchParams(location.search).get('error') === 'domain') {
+    const urlError = new URLSearchParams(location.search).get('error');
+    if (urlError === 'domain' || urlError === 'access') {
       showError('Your account is not authorised. Contact your administrator to request access.');
     }
     if (user && isAuthorized(user)) {
