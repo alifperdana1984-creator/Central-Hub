@@ -12,6 +12,12 @@ service cloud.firestore {
              request.auth.token.email.matches('.*@eduversal\\.org$');
     }
 
+    // School teachers — any @*.sch.id Google account (Academic Hub / Teachers Hub)
+    function isSchoolUser() {
+      return isSignedIn() &&
+             request.auth.token.email.matches('.*\\.sch\\.id$');
+    }
+
     // Manually-added users sign in via email/password — Firebase sets
     // sign_in_provider = 'password' for these accounts.
     function isEmailPasswordUser() {
@@ -19,9 +25,9 @@ service cloud.firestore {
              request.auth.token.firebase.sign_in_provider == 'password';
     }
 
-    // Authorized = @eduversal.org domain OR manually-added email/password account
+    // Authorized = @eduversal.org domain OR school domain OR manually-added email/password account
     function isAuthorized() {
-      return isEduversal() || isEmailPasswordUser();
+      return isEduversal() || isSchoolUser() || isEmailPasswordUser();
     }
 
     // Helper: read the caller's Firestore profile
@@ -31,6 +37,14 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthorized() && userProfile().role_centralhub == 'central_admin';
+    }
+
+    // Academic Hub admin: central_admin or academic_admin can create/edit/delete AH content
+    function isAHAdmin() {
+      return isAuthorized() && (
+        userProfile().role_centralhub  == 'central_admin'  ||
+        userProfile().role_academichub == 'academic_admin'
+      );
     }
 
     function isModerator() {
@@ -83,6 +97,48 @@ service cloud.firestore {
     match /central_documents/{docId} {
       allow read:   if isAuthorized();
       allow create, update, delete: if isAdmin();
+    }
+
+    // ── documents (Academic Hub) ────────────────────────────
+    match /documents/{docId} {
+      allow read:   if isAuthorized();
+      allow create, update, delete: if isAHAdmin();
+    }
+
+    // ── doc_likes (Academic Hub) ────────────────────────────
+    match /doc_likes/{likeId} {
+      allow read:  if isAuthorized();
+      allow write: if isAuthorized() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthorized();
+    }
+
+    // ── doc_ratings (Academic Hub) ──────────────────────────
+    match /doc_ratings/{ratingId} {
+      allow read:  if isAuthorized();
+      allow write: if isAuthorized() && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ── library (Academic Hub) ──────────────────────────────
+    match /library/{resourceId} {
+      allow read:   if isAuthorized();
+      allow create, delete: if isAHAdmin();
+      allow update: if isAHAdmin();
+    }
+
+    // ── prompts (Academic Hub — AI Prompts) ─────────────────
+    match /prompts/{promptId} {
+      allow read:   if isAuthorized();
+      allow create, delete: if isAHAdmin();
+      // Any user can increment the `uses` counter; only admin can edit other fields
+      allow update: if isAHAdmin()
+                    || (isAuthorized()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uses']));
+    }
+
+    // ── feedbacks ───────────────────────────────────────────
+    match /feedbacks/{fbId} {
+      allow create: if isAuthorized();
+      allow read, update, delete: if isAdmin();
     }
 
     // ── timeline_activities (Academic Calendar) ────────────
