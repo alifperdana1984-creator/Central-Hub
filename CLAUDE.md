@@ -14,9 +14,9 @@ CentralHub is the super-admin control panel for the Eduversal platform. Only `ce
 Eduversal Web/                    ← monorepo root (not a deployed app)
 ├── Academic Hub/                 ← analytics dashboards (Vercel)
 ├── CentralHub/                   ← THIS app (Vercel)
+│   ├── firestore.rules           ← ⚠️ ONLY Firestore rules file — deploy from here
+│   └── firebase.json             ← firebase deploy config
 ├── Teachers Hub/                 ← teacher tools (Vercel)
-├── firestore.rules               ← unified rules, deploy to centralhub-8727b
-├── firebase.json                 ← root-level firebase config (rules only)
 ├── migrate-auth-and-firestore.js ← one-time migration script
 └── keys/                         ← service account JSON keys (gitignored)
 ```
@@ -136,10 +136,14 @@ Roles are stored in Firestore at `users/{uid}.role` (string field).
 
 **IMPORTANT — collection rename:** CentralHub's documents collection is `central_documents`, NOT `documents`. The rename happened during the multi-project consolidation to avoid Firestore rule conflicts with the legacy `documents` collection.
 
-**Firestore rules** live at both the monorepo root (`../firestore.rules`) and here in `CentralHub/firestore.rules`. The authoritative copy is the monorepo root. Deploy with:
-```
+**Firestore rules** live **exclusively** in `CentralHub/firestore.rules` — this is the single source of truth for all three apps (they share the same Firebase project).
+
+⚠️ **Always deploy rules from the `CentralHub/` directory:**
+```bash
+cd "Eduversal Web/CentralHub"
 firebase deploy --only firestore:rules --project centralhub-8727b
 ```
+Academic Hub and Teachers Hub do NOT have their own `firestore.rules`. Never create one there — it would overwrite the shared rules with an outdated version.
 
 ---
 
@@ -183,6 +187,9 @@ firebase deploy --only firestore:rules --project centralhub-8727b
 | `schools.html`      | `/schools`       | School management              |
 | `staff.html`        | `/staff`         | Staff management               |
 | `documents.html`    | `/documents`     | Document management (uses `central_documents` collection) |
+| `academics.html`    | `/academics`     | Academics module hub           |
+| `igcse-pacing.html` | `/igcse-pacing`  | IGCSE pacing guide management (central_admin only) |
+| `console.html`      | `/console`       | User management (central_admin only) |
 
 ---
 
@@ -195,7 +202,7 @@ firebase deploy --only firestore:rules --project centralhub-8727b
 | `firebase.json`              | Firestore rules config (no hosting section used)              |
 | `firebase-config.js`         | Local dev config (gitignored)                                 |
 | `firebase-config.example.js` | Template for firebase-config.js                               |
-| `firestore.rules`            | Firestore security rules (local copy; root is authoritative)  |
+| `firestore.rules`            | Firestore security rules — **THE authoritative copy, deploy from here** |
 | `vercel.json`                | Vercel deployment config (build cmd, output dir)              |
 | `resources/`                 | Static assets                                                 |
 
