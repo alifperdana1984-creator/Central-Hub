@@ -114,12 +114,20 @@ onAuthStateChanged(auth, async (user) => {
       profile = newProfile;
     } else {
       profile = userSnap.data();
-      // Legacy migration: if CentralHub role field is absent, derive from old `role` field
+      // Legacy role mapping: old 'admin' → 'central_admin'
+      const LEGACY_MAP = { 'admin': 'central_admin' };
+      const legacyRole = profile.role;
       if (profile[PLATFORM_KEY] == null) {
-        const legacy     = profile.role;
-        const assignRole = ALLOWED_ROLES.includes(legacy) ? legacy : DEFAULT_ROLE;
+        // First visit with new system — assign correct role
+        const assignRole = LEGACY_MAP[legacyRole]
+          || (ALLOWED_ROLES.includes(legacyRole) ? legacyRole : DEFAULT_ROLE);
         await setDoc(userRef, { [PLATFORM_KEY]: assignRole }, { merge: true });
         profile = { ...profile, [PLATFORM_KEY]: assignRole };
+      } else if (profile[PLATFORM_KEY] === DEFAULT_ROLE && LEGACY_MAP[legacyRole]) {
+        // Correct a previously wrong mapping (e.g. 'admin' was assigned 'central_user')
+        const correctRole = LEGACY_MAP[legacyRole];
+        await setDoc(userRef, { [PLATFORM_KEY]: correctRole }, { merge: true });
+        profile = { ...profile, [PLATFORM_KEY]: correctRole };
       }
     }
   } catch (err) {
