@@ -43,11 +43,12 @@ service cloud.firestore {
 
     // ── users ──────────────────────────────────────────────
     match /users/{uid} {
-      // Any authorised user can read their own doc; admins can read all
-      allow get:    if isAuthorized() && (request.auth.uid == uid || isAdmin());
-      // List (collection query) is admin-only to avoid per-doc get() loops
+      // Any signed-in user can read/write their own doc
+      // (covers school-domain Teachers Hub / Academic Hub users logging in via Google)
+      allow get:    if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      // List (collection query) is admin-only — only CentralHub console uses this
       allow list:   if isAdmin();
-      allow write:  if isAuthorized() && (request.auth.uid == uid || isAdmin());
+      allow write:  if isSignedIn() && (request.auth.uid == uid || isAdmin());
     }
 
     // ── schools ────────────────────────────────────────────
