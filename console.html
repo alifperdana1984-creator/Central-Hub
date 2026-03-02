@@ -417,6 +417,7 @@
     try {
       await deleteDoc(fsDoc(db, 'users', editingId));
       allUsers = allUsers.filter(x => x.id !== editingId);
+      btn.disabled = false; btn.textContent = 'Delete user';
       closeDrawer();
       applyFilters();
     } catch (e) {
