@@ -54,7 +54,7 @@
     .user-count { font-size: 0.85rem; color: var(--ink-3); padding: 0 4px; }
 
     /* TABLE */
-    .table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     thead { background: var(--paper); border-bottom: 1px solid var(--border); }
     th { padding: 11px 16px; text-align: left; font-size: 0.75rem; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap; }
@@ -181,12 +181,6 @@
       <option value="teachers_admin">teachers_admin</option>
       <option value="teachers_user">teachers_user</option>
     </select>
-    <select class="filter-select" id="platformFilter" aria-label="Filter by platform">
-      <option value="">All platforms</option>
-      <option value="centralhub">CentralHub</option>
-      <option value="academichub">Academic Hub</option>
-      <option value="teachershub">Teachers Hub</option>
-    </select>
     <span class="user-count" id="userCount"></span>
   </div>
 
@@ -196,14 +190,15 @@
       <thead>
         <tr>
           <th>User</th>
-          <th>Platform</th>
-          <th>Role</th>
+          <th>CentralHub</th>
+          <th>Academic Hub</th>
+          <th>Teachers Hub</th>
           <th>Joined</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody id="usersBody">
-        <tr><td colspan="5" style="padding:48px;text-align:center;color:var(--ink-3)">
+        <tr><td colspan="6" style="padding:48px;text-align:center;color:var(--ink-3)">
           <span class="skel" style="height:16px;width:60%;display:block;margin:auto"></span>
         </td></tr>
       </tbody>
@@ -234,24 +229,29 @@
 
       <hr class="drawer-divider">
 
-      <!-- Editable fields -->
+      <!-- Per-platform role fields -->
       <div class="form-group">
-        <label class="form-label" for="fieldRole">Role</label>
-        <select class="form-select" id="fieldRole">
+        <label class="form-label" for="fieldRoleCH">CentralHub Role</label>
+        <select class="form-select" id="fieldRoleCH">
+          <option value="">— not set —</option>
           <option value="central_admin">central_admin</option>
           <option value="central_user">central_user</option>
-          <option value="academic_admin">academic_admin</option>
-          <option value="academic_user">academic_user</option>
-          <option value="teachers_admin">teachers_admin</option>
-          <option value="teachers_user">teachers_user</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" for="fieldPlatform">Platform</label>
-        <select class="form-select" id="fieldPlatform">
-          <option value="centralhub">CentralHub</option>
-          <option value="academichub">Academic Hub</option>
-          <option value="teachershub">Teachers Hub</option>
+        <label class="form-label" for="fieldRoleAH">Academic Hub Role</label>
+        <select class="form-select" id="fieldRoleAH">
+          <option value="">— not set —</option>
+          <option value="academic_admin">academic_admin</option>
+          <option value="academic_user">academic_user</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fieldRoleTH">Teachers Hub Role</label>
+        <select class="form-select" id="fieldRoleTH">
+          <option value="">— not set —</option>
+          <option value="teachers_admin">teachers_admin</option>
+          <option value="teachers_user">teachers_user</option>
         </select>
       </div>
     </div>
@@ -308,12 +308,12 @@
       applyFilters();
     } catch (e) {
       document.getElementById('usersBody').innerHTML =
-        '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink-3)">Could not load users.</td></tr>';
+        '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--ink-3)">Could not load users.</td></tr>';
     }
   }
 
   function bindEvents() {
-    ['searchInput', 'roleFilter', 'platformFilter'].forEach(id =>
+    ['searchInput', 'roleFilter'].forEach(id =>
       document.getElementById(id).addEventListener('input', applyFilters));
     document.getElementById('drawerClose').addEventListener('click', closeDrawer);
     document.getElementById('cancelBtn').addEventListener('click', closeDrawer);
@@ -327,11 +327,9 @@
   function applyFilters() {
     const q  = document.getElementById('searchInput').value.toLowerCase();
     const ro = document.getElementById('roleFilter').value;
-    const pl = document.getElementById('platformFilter').value;
     const list = allUsers.filter(u =>
       (!q  || u.displayName?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)) &&
-      (!ro || u.role     === ro) &&
-      (!pl || u.platform === pl)
+      (!ro || u.role_centralhub === ro || u.role_academichub === ro || u.role_teachershub === ro)
     );
     document.getElementById('userCount').textContent =
       `${list.length} user${list.length !== 1 ? 's' : ''}`;
@@ -341,7 +339,7 @@
   function renderTable(list) {
     const body = document.getElementById('usersBody');
     if (!list.length) {
-      body.innerHTML = '<tr class="empty-row"><td colspan="5">No users match your filters.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="6">No users match your filters.</td></tr>';
       return;
     }
     body.innerHTML = list.map(u => {
@@ -350,8 +348,9 @@
       const joined   = u.createdAt?.toDate
         ? u.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
         : '—';
-      const roleBadge     = ROLE_BADGE[u.role]         || `<span class="badge badge-unknown">${esc(u.role || '—')}</span>`;
-      const platformBadge = PLATFORM_BADGE[u.platform] || `<span class="badge badge-unknown">—</span>`;
+      const chBadge = ROLE_BADGE[u.role_centralhub]  || '<span style="color:var(--ink-3)">—</span>';
+      const ahBadge = ROLE_BADGE[u.role_academichub] || '<span style="color:var(--ink-3)">—</span>';
+      const thBadge = ROLE_BADGE[u.role_teachershub]  || '<span style="color:var(--ink-3)">—</span>';
       return `
         <tr>
           <td>
@@ -363,8 +362,9 @@
               </div>
             </div>
           </td>
-          <td>${platformBadge}</td>
-          <td>${roleBadge}</td>
+          <td>${chBadge}</td>
+          <td>${ahBadge}</td>
+          <td>${thBadge}</td>
           <td style="color:var(--ink-3);font-size:0.82rem">${joined}</td>
           <td><button class="btn-action" onclick="editUser('${u.id}')">Edit</button></td>
         </tr>`;
@@ -375,10 +375,11 @@
     const u = allUsers.find(x => x.id === id);
     if (!u) return;
     editingId = id;
-    document.getElementById('fieldName').value     = u.displayName || '';
-    document.getElementById('fieldEmail').value    = u.email       || '';
-    document.getElementById('fieldRole').value     = u.role        || 'central_user';
-    document.getElementById('fieldPlatform').value = u.platform    || 'centralhub';
+    document.getElementById('fieldName').value   = u.displayName      || '';
+    document.getElementById('fieldEmail').value  = u.email            || '';
+    document.getElementById('fieldRoleCH').value = u.role_centralhub  || '';
+    document.getElementById('fieldRoleAH').value = u.role_academichub || '';
+    document.getElementById('fieldRoleTH').value = u.role_teachershub || '';
     hideErr();
     document.getElementById('drawerOverlay').classList.add('open');
   }
@@ -390,15 +391,25 @@
   async function saveUser() {
     const displayName = document.getElementById('fieldName').value.trim();
     const email       = document.getElementById('fieldEmail').value.trim();
-    const role        = document.getElementById('fieldRole').value;
-    const platform    = document.getElementById('fieldPlatform').value;
+    const roleCH      = document.getElementById('fieldRoleCH').value;
+    const roleAH      = document.getElementById('fieldRoleAH').value;
+    const roleTH      = document.getElementById('fieldRoleTH').value;
     if (!displayName) { showErr('Name is required.'); return; }
     const btn = document.getElementById('saveBtn');
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
-      await updateDoc(fsDoc(db, 'users', editingId), { displayName, email, role, platform });
+      await updateDoc(fsDoc(db, 'users', editingId), {
+        displayName,
+        email,
+        role_centralhub:  roleCH,
+        role_academichub: roleAH,
+        role_teachershub: roleTH,
+      });
       const u = allUsers.find(x => x.id === editingId);
-      if (u) { u.displayName = displayName; u.email = email; u.role = role; u.platform = platform; }
+      if (u) {
+        u.displayName = displayName; u.email = email;
+        u.role_centralhub = roleCH; u.role_academichub = roleAH; u.role_teachershub = roleTH;
+      }
       closeDrawer();
       applyFilters();
     } catch (e) {

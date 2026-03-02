@@ -30,14 +30,14 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthorized() && userProfile().role == 'central_admin';
+      return isAuthorized() && userProfile().role_centralhub == 'central_admin';
     }
 
     function isModerator() {
       return isAuthorized() && (
-        userProfile().role == 'central_admin'  ||
-        userProfile().role == 'academic_admin' ||
-        userProfile().role == 'academic_user'
+        userProfile().role_centralhub  == 'central_admin'  ||
+        userProfile().role_academichub == 'academic_admin' ||
+        userProfile().role_academichub == 'academic_user'
       );
     }
 
