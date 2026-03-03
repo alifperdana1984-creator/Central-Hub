@@ -99,6 +99,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // ── school_appraisals (Central Hub handbook content) ──
+    match /school_appraisals/{docId} {
+      allow read:   if isAuthorized();
+      allow write:  if isAdmin();
+    }
+
     // ── documents (Academic Hub) ────────────────────────────
     match /documents/{docId} {
       allow read:   if isAuthorized();
