@@ -105,6 +105,12 @@ service cloud.firestore {
       allow write:  if isAdmin();
     }
 
+    // ── teacher_appraisals (Central Hub handbook content) ─
+    match /teacher_appraisals/{docId} {
+      allow read:   if isAuthorized();
+      allow write:  if isAdmin();
+    }
+
     // ── documents (Academic Hub) ────────────────────────────
     match /documents/{docId} {
       allow read:   if isAuthorized();
