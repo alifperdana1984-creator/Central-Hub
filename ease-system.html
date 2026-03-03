@@ -82,6 +82,52 @@
     .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
     .section-title { font-size: 1.02rem; font-weight: 600; margin-bottom: 10px; color: var(--ink); }
     .section-body { color: var(--ink-2); font-size: 0.9rem; line-height: 1.62; white-space: pre-wrap; }
+    .image-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+    }
+    .image-item {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      min-height: 120px;
+    }
+    .image-item img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      display: block;
+    }
+    .image-remove {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      border: 1px solid #fecaca;
+      background: rgba(255, 241, 242, 0.95);
+      color: #dc2626;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+    }
+    .image-add {
+      margin-top: 10px;
+      display: none;
+      border: 1px dashed #8b5cf6;
+      color: #6d28d9;
+      background: #f3e8ff;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
     [contenteditable="true"] { outline: 2px dashed #8b5cf6; outline-offset: 2px; border-radius: 6px; padding: 2px 4px; background: #faf5ff; }
     .btn-remove {
@@ -152,12 +198,14 @@
 
     <div class="notice" id="adminNotice" style="display:none;">Only `central_admin` users can edit this handbook. Changes are saved to Firestore for all users.</div>
     <section id="viewRoot"></section>
+    <input id="imageUploadInput" type="file" accept="image/*" style="display:none;" />
   </main>
 
   <script src="firebase-config.js"></script>
   <script type="module" src="auth-guard.js"></script>
   <script type="module">
     import { doc, onSnapshot, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
     const DOC_PATH = ["ease_system", "main_handbook"];
     const DEFAULT_DATA = {
@@ -176,7 +224,7 @@
       ]
     };
 
-    const state = { data: structuredClone(DEFAULT_DATA), originalData: structuredClone(DEFAULT_DATA), editMode: false, source: "default", isAdmin: false, unsub: null };
+    const state = { data: structuredClone(DEFAULT_DATA), originalData: structuredClone(DEFAULT_DATA), editMode: false, source: "default", isAdmin: false, unsub: null, pendingImageSection: null };
     const el = {
       heroTitle: document.getElementById("heroTitle"),
       heroSubtitle: document.getElementById("heroSubtitle"),
@@ -188,7 +236,8 @@
       editToggleBtn: document.getElementById("editToggleBtn"),
       addSectionBtn: document.getElementById("addSectionBtn"),
       saveBtn: document.getElementById("saveBtn"),
-      cancelBtn: document.getElementById("cancelBtn")
+      cancelBtn: document.getElementById("cancelBtn"),
+      imageUploadInput: document.getElementById("imageUploadInput")
     };
 
     function normalizeData(raw) {
@@ -196,7 +245,15 @@
       return {
         title: String(raw?.title || DEFAULT_DATA.title),
         subtitle: String(raw?.subtitle || DEFAULT_DATA.subtitle),
-        sections: sections.map((s, idx) => ({ id: String(s?.id || `section_${idx+1}`), title: String(s?.title || `Section ${idx+1}`), content: String(s?.content || "") }))
+        sections: sections.map((s, idx) => ({
+          id: String(s?.id || `section_${idx+1}`),
+          title: String(s?.title || `Section ${idx+1}`),
+          content: String(s?.content || ""),
+          images: Array.isArray(s?.images) ? s.images
+            .filter(img => img && typeof img.url === "string")
+            .map(img => ({ url: String(img.url), path: String(img.path || ""), name: String(img.name || "") }))
+            : []
+        }))
       };
     }
 
@@ -207,6 +264,12 @@
         node.contentEditable = on ? "true" : "false";
       });
       el.viewRoot.querySelectorAll(".btn-remove").forEach(btn => {
+        btn.style.display = on ? "inline-flex" : "none";
+      });
+      el.viewRoot.querySelectorAll(".image-add").forEach(btn => {
+        btn.style.display = on ? "inline-flex" : "none";
+      });
+      el.viewRoot.querySelectorAll(".image-remove").forEach(btn => {
         btn.style.display = on ? "inline-flex" : "none";
       });
     }
@@ -244,10 +307,46 @@
         body.dataset.index = String(idx);
         body.textContent = section.content;
 
+        const imageGrid = document.createElement("div");
+        imageGrid.className = "image-grid";
+        (section.images || []).forEach((img, imageIndex) => {
+          const item = document.createElement("div");
+          item.className = "image-item";
+
+          const a = document.createElement("a");
+          a.href = img.url;
+          a.target = "_blank";
+          a.rel = "noopener";
+
+          const image = document.createElement("img");
+          image.src = img.url;
+          image.alt = img.name || `Section image ${imageIndex + 1}`;
+          a.appendChild(image);
+
+          const removeImageBtn = document.createElement("button");
+          removeImageBtn.type = "button";
+          removeImageBtn.className = "image-remove";
+          removeImageBtn.dataset.sectionIndex = String(idx);
+          removeImageBtn.dataset.imageIndex = String(imageIndex);
+          removeImageBtn.textContent = "Remove";
+
+          item.appendChild(a);
+          item.appendChild(removeImageBtn);
+          imageGrid.appendChild(item);
+        });
+
+        const addImageBtn = document.createElement("button");
+        addImageBtn.type = "button";
+        addImageBtn.className = "image-add";
+        addImageBtn.dataset.addImageSection = String(idx);
+        addImageBtn.textContent = "Add image";
+
         head.appendChild(title);
         head.appendChild(removeBtn);
         card.appendChild(head);
         card.appendChild(body);
+        card.appendChild(imageGrid);
+        card.appendChild(addImageBtn);
         el.viewRoot.appendChild(card);
       });
 
@@ -280,8 +379,37 @@
       state.data.title = (state.data.title || "").trim() || DEFAULT_DATA.title;
       state.data.subtitle = (state.data.subtitle || "").trim() || DEFAULT_DATA.subtitle;
       state.data.sections = state.data.sections
-        .map((s, idx) => ({ id: s.id || `section_${idx+1}`, title: (s.title || "").trim() || `Section ${idx+1}`, content: (s.content || "").trim() }))
+        .map((s, idx) => ({
+          id: s.id || `section_${idx+1}`,
+          title: (s.title || "").trim() || `Section ${idx+1}`,
+          content: (s.content || "").trim(),
+          images: Array.isArray(s.images) ? s.images
+            .filter(img => img && typeof img.url === "string" && img.url.trim())
+            .map(img => ({ url: img.url.trim(), path: String(img.path || ""), name: String(img.name || "") }))
+            : []
+        }))
         .filter(s => s.title || s.content);
+    }
+
+    async function uploadImageToSection(sectionIndex, file) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `handbook_uploads/ease_system/main_handbook/${Date.now()}_${safeName}`;
+      const storage = getStorage(window.firebaseApp);
+      const fileRef = storageRef(storage, path);
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
+      if (!state.data.sections[sectionIndex].images) state.data.sections[sectionIndex].images = [];
+      state.data.sections[sectionIndex].images.push({ url, path, name: file.name });
+    }
+
+    async function tryDeleteImageFromStorage(image) {
+      if (!image?.path) return;
+      try {
+        const storage = getStorage(window.firebaseApp);
+        await deleteObject(storageRef(storage, image.path));
+      } catch (error) {
+        console.warn("Image file delete skipped/failed:", error);
+      }
     }
 
     async function saveChanges() {
@@ -326,7 +454,7 @@
       el.cancelBtn.addEventListener("click", exitEditMode);
       el.saveBtn.addEventListener("click", saveChanges);
       el.addSectionBtn.addEventListener("click", () => {
-        state.data.sections.push({ id: `section_${Date.now()}`, title: "New Section", content: "" });
+        state.data.sections.push({ id: `section_${Date.now()}`, title: "New Section", content: "", images: [] });
         renderView();
       });
 
@@ -344,11 +472,54 @@
 
       el.viewRoot.addEventListener("click", (event) => {
         const btn = event.target.closest("button[data-remove-index]");
-        if (!btn || !state.editMode) return;
-        const idx = Number(btn.dataset.removeIndex);
-        if (Number.isNaN(idx)) return;
-        state.data.sections.splice(idx, 1);
-        renderView();
+        if (btn && state.editMode) {
+          const idx = Number(btn.dataset.removeIndex);
+          if (Number.isNaN(idx)) return;
+          state.data.sections.splice(idx, 1);
+          renderView();
+          return;
+        }
+
+        const addBtn = event.target.closest("button[data-add-image-section]");
+        if (addBtn && state.editMode) {
+          const sectionIndex = Number(addBtn.dataset.addImageSection);
+          if (Number.isNaN(sectionIndex)) return;
+          state.pendingImageSection = sectionIndex;
+          el.imageUploadInput.value = "";
+          el.imageUploadInput.click();
+          return;
+        }
+
+        const removeImageBtn = event.target.closest("button.image-remove");
+        if (removeImageBtn && state.editMode) {
+          const sectionIndex = Number(removeImageBtn.dataset.sectionIndex);
+          const imageIndex = Number(removeImageBtn.dataset.imageIndex);
+          if (Number.isNaN(sectionIndex) || Number.isNaN(imageIndex)) return;
+          const image = state.data.sections[sectionIndex]?.images?.[imageIndex];
+          if (!image) return;
+          state.data.sections[sectionIndex].images.splice(imageIndex, 1);
+          renderView();
+          tryDeleteImageFromStorage(image);
+        }
+      });
+
+      el.imageUploadInput.addEventListener("change", async (event) => {
+        if (!state.editMode || !state.isAdmin) return;
+        const file = event.target.files?.[0];
+        const sectionIndex = state.pendingImageSection;
+        state.pendingImageSection = null;
+        if (!file || sectionIndex == null || !state.data.sections[sectionIndex]) return;
+
+        el.saveState.textContent = "Uploading image";
+        try {
+          await uploadImageToSection(sectionIndex, file);
+          renderView();
+          el.saveState.textContent = "Image ready - Save to Firestore";
+        } catch (error) {
+          console.error("Image upload failed", error);
+          alert("Image upload failed. Check Firebase Storage permissions.");
+          el.saveState.textContent = "Image upload failed";
+        }
       });
     }
 
