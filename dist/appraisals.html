@@ -435,7 +435,10 @@
   </a>
 
   <div class="nav-links">
-    <a href="index"         class="nav-link">Dashboard</a>
+    <a href="index" class="nav-link" data-nav-page="index">Dashboard</a>
+    <a href="academics" class="nav-link" data-nav-page="academics">Academics</a>
+    <a href="assessments" class="nav-link" data-nav-page="assessments">Assessments</a>
+    <a href="appraisals" class="nav-link" data-nav-page="appraisals">Appraisals</a>
     <a href="https://teachershub.eduversal.org" class="nav-link" id="navTeachersHub" target="_blank" rel="noopener">Teachers Hub</a>
     <a href="https://academichub.eduversal.org" class="nav-link" id="navAcademicHub" target="_blank" rel="noopener">Academic Hub</a>
   </div>
@@ -446,6 +449,32 @@
     <button class="btn-logout" id="logoutBtn">Sign out</button>
   </div>
 </nav>
+<script>
+  (function () {
+    const aliases = {
+      "academic-calendar": "academics",
+      "secondary-checkpoint-pacing": "academics",
+      "igcse-pacing": "academics",
+      "as-alevel-pacing": "academics",
+      "ease-system": "assessments",
+      "school-appraisals": "appraisals",
+      "teacher-appraisals": "appraisals",
+      "console": "console"
+    };
+
+    const rawPath = window.location.pathname.split("/").pop() || "index";
+    const page = rawPath.replace(/\.html$/i, "") || "index";
+    const targetPage = aliases[page] || page || "index";
+
+    document.querySelectorAll(".nav-links .nav-link").forEach((link) => {
+      const linkPage = link.getAttribute("data-nav-page");
+      const isConsoleLink = (link.getAttribute("href") || "").replace(/^\//, "") === "console";
+      const isActive = linkPage === targetPage || (targetPage === "console" && isConsoleLink);
+      link.classList.toggle("active", Boolean(isActive));
+    });
+  })();
+</script>
+
 
 <!-- ===== HERO ===== -->
 <section class="hero" aria-label="Appraisals module header">

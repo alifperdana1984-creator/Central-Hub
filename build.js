@@ -15,6 +15,11 @@ function copyDirRecursive(srcDir, destDir) {
 // ── Create dist ──────────────────────────────────────────────────
 if (!fs.existsSync("dist")) fs.mkdirSync("dist");
 
+const sharedNavbarPath = path.join("partials", "navbar.html");
+const sharedNavbar = fs.existsSync(sharedNavbarPath)
+  ? fs.readFileSync(sharedNavbarPath, "utf8")
+  : "";
+
 // ── Generate firebase-config.js from Vercel env vars ────────────
 const cfg = {
   FIREBASE_API_KEY:            process.env.FIREBASE_API_KEY            || "",
@@ -64,7 +69,11 @@ const htmlFiles = [
 
 htmlFiles.forEach((file) => {
   if (!fs.existsSync(file)) return;
-  fs.copyFileSync(file, path.join("dist", file));
+  const source = fs.readFileSync(file, "utf8");
+  const withSharedNavbar = sharedNavbar
+    ? source.replace("<!-- SHARED_NAVBAR -->", sharedNavbar)
+    : source;
+  fs.writeFileSync(path.join("dist", file), withSharedNavbar);
   console.log(`Copied: ${file}`);
 });
 
@@ -86,4 +95,3 @@ console.log("Environment variables:");
 Object.keys(cfg).forEach((key) => {
   console.log(`  ${key}: ${cfg[key] ? "[SET]" : "[NOT SET - login will fail]"}`);
 });
-

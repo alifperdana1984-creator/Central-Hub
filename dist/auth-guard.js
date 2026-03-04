@@ -18,10 +18,12 @@
 
 import { initializeApp, getApps }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut }
+import { getAuth, onAuthStateChanged, signOut, updateProfile }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // ── Platform identity ─────────────────────────────────────────────
 const PLATFORM_KEY  = 'role_centralhub';   // per-user Firestore field
@@ -46,6 +48,7 @@ const firebaseConfig = {
 const app  = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+const storage = getStorage(app);
 
 window.firebaseApp = app;
 window.auth        = auth;
@@ -82,6 +85,386 @@ function promptForName() {
     };
     btn.addEventListener('click', submit);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  });
+}
+
+function ensureProfileModalStyles() {
+  if (document.getElementById('profileModalStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'profileModalStyles';
+  style.textContent = `
+    .profile-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      background: rgba(10, 10, 26, 0.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .profile-modal-overlay.open { display: flex; }
+    .profile-modal {
+      width: min(100%, 460px);
+      background: #fff;
+      border: 1px solid #e0ddd6;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .profile-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid #efede8;
+    }
+    .profile-modal-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: #1c1c2e;
+      font-weight: 600;
+    }
+    .profile-modal-close {
+      border: 0;
+      background: none;
+      font-size: 1.3rem;
+      line-height: 1;
+      color: #8888a8;
+      cursor: pointer;
+      padding: 0;
+    }
+    .profile-modal-body {
+      padding: 16px 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .profile-field {
+      display: grid;
+      gap: 5px;
+    }
+    .profile-field label {
+      font-size: 0.79rem;
+      color: #44445a;
+      font-weight: 500;
+    }
+    .profile-field input {
+      border: 1px solid #e0ddd6;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 0.9rem;
+      color: #1c1c2e;
+      font-family: inherit;
+      width: 100%;
+    }
+    .profile-field input[readonly] {
+      background: #f7f6f3;
+      color: #666682;
+    }
+    .profile-modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 18px 16px;
+      border-top: 1px solid #efede8;
+    }
+    .profile-btn {
+      border: 1px solid #d8d4ce;
+      background: #fff;
+      color: #44445a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .profile-btn-primary {
+      border-color: transparent;
+      color: #fff;
+      background: linear-gradient(135deg, #7c3aed, #0891b2);
+    }
+    .profile-modal-msg {
+      min-height: 18px;
+      font-size: 0.78rem;
+      color: #dc2626;
+      padding: 0 18px 12px;
+    }
+    .profile-modal-msg.ok {
+      color: #166534;
+    }
+    .profile-avatar-editor {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .profile-avatar-preview {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 1px solid #dcd8d2;
+      background: linear-gradient(135deg, #7c3aed, #0891b2);
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      overflow: hidden;
+      user-select: none;
+    }
+    .profile-avatar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .profile-avatar-file {
+      display: none;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function getInitials(displayName, email) {
+  const seed = (displayName || email || '').trim();
+  if (!seed) return 'U';
+  return seed
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function applyAvatarVisual(avatarEl, displayName, email, photoURL) {
+  if (!avatarEl) return;
+  const initials = getInitials(displayName, email);
+  if (photoURL) {
+    avatarEl.style.backgroundImage = `url("${photoURL}")`;
+    avatarEl.style.backgroundSize = 'cover';
+    avatarEl.style.backgroundPosition = 'center';
+    avatarEl.textContent = '';
+  } else {
+    avatarEl.style.backgroundImage = 'linear-gradient(135deg, #7c3aed, #0891b2)';
+    avatarEl.style.backgroundSize = '';
+    avatarEl.style.backgroundPosition = '';
+    avatarEl.textContent = initials;
+  }
+}
+
+function mountProfileModal({ user, profile, userRef, navUserName, navAvatar }) {
+  const navAuth = document.querySelector('.nav-auth');
+  if (!navAuth) return;
+
+  ensureProfileModalStyles();
+
+  navUserName.style.cursor = 'pointer';
+  navAvatar.style.cursor = 'pointer';
+  navUserName.title = 'Open profile';
+  navAvatar.title = 'Open profile';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'profile-modal-overlay';
+  overlay.innerHTML = `
+    <div class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <div class="profile-modal-head">
+        <h3 id="profileModalTitle">Profile</h3>
+        <button type="button" class="profile-modal-close" id="profileCloseBtn" aria-label="Close profile">×</button>
+      </div>
+      <div class="profile-modal-body">
+        <div class="profile-field">
+          <label>Photo</label>
+          <div class="profile-avatar-editor">
+            <div class="profile-avatar-preview" id="profileAvatarPreview"></div>
+            <div class="profile-avatar-actions">
+              <button type="button" class="profile-btn" id="profilePhotoPickBtn">Choose photo</button>
+              <button type="button" class="profile-btn" id="profilePhotoRemoveBtn">Remove</button>
+              <input id="profilePhotoFile" class="profile-avatar-file" type="file" accept="image/*" />
+            </div>
+          </div>
+        </div>
+        <div class="profile-field">
+          <label for="profileDisplayName">Display name</label>
+          <input id="profileDisplayName" type="text" maxlength="80" />
+        </div>
+        <div class="profile-field">
+          <label for="profilePhone">Phone</label>
+          <input id="profilePhone" type="tel" maxlength="30" placeholder="+62..." />
+        </div>
+        <div class="profile-field">
+          <label for="profileTitle">Title</label>
+          <input id="profileTitle" type="text" maxlength="80" placeholder="Coordinator, Principal, etc." />
+        </div>
+        <div class="profile-field">
+          <label for="profileEmail">Email</label>
+          <input id="profileEmail" type="email" readonly />
+        </div>
+      </div>
+      <p class="profile-modal-msg" id="profileMsg"></p>
+      <div class="profile-modal-foot">
+        <button type="button" class="profile-btn" id="profileCancelBtn">Cancel</button>
+        <button type="button" class="profile-btn profile-btn-primary" id="profileSaveBtn">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const el = {
+    overlay,
+    close: overlay.querySelector('#profileCloseBtn'),
+    cancel: overlay.querySelector('#profileCancelBtn'),
+    save: overlay.querySelector('#profileSaveBtn'),
+    msg: overlay.querySelector('#profileMsg'),
+    avatarPreview: overlay.querySelector('#profileAvatarPreview'),
+    photoPickBtn: overlay.querySelector('#profilePhotoPickBtn'),
+    photoRemoveBtn: overlay.querySelector('#profilePhotoRemoveBtn'),
+    photoFile: overlay.querySelector('#profilePhotoFile'),
+    displayName: overlay.querySelector('#profileDisplayName'),
+    phone: overlay.querySelector('#profilePhone'),
+    title: overlay.querySelector('#profileTitle'),
+    email: overlay.querySelector('#profileEmail'),
+  };
+
+  const localState = {
+    photoURL: (profile.photoURL || user.photoURL || '').trim(),
+    removePhoto: false,
+    selectedPhotoFile: null,
+  };
+
+  const refreshNav = (name, photoURL) => {
+    const finalName = (name || '').trim() || user.email;
+    navUserName.textContent = finalName;
+    applyAvatarVisual(navAvatar, finalName, user.email, photoURL);
+  };
+
+  const refreshProfileAvatarPreview = () => {
+    const previewUrl = localState.removePhoto ? '' : localState.photoURL;
+    applyAvatarVisual(el.avatarPreview, el.displayName.value.trim(), user.email, previewUrl);
+  };
+
+  const fill = () => {
+    el.displayName.value = (profile.displayName || user.displayName || '').trim();
+    el.phone.value = (profile.phone || '').trim();
+    el.title.value = (profile.title || '').trim();
+    el.email.value = user.email || '';
+    localState.photoURL = (profile.photoURL || user.photoURL || '').trim();
+    localState.removePhoto = false;
+    localState.selectedPhotoFile = null;
+    el.photoFile.value = '';
+    refreshProfileAvatarPreview();
+    el.msg.textContent = '';
+    el.msg.classList.remove('ok');
+  };
+
+  const open = () => {
+    fill();
+    overlay.classList.add('open');
+    el.displayName.focus();
+  };
+  const close = () => {
+    overlay.classList.remove('open');
+  };
+
+  navUserName.addEventListener('click', open);
+  navAvatar.addEventListener('click', open);
+  el.close.addEventListener('click', close);
+  el.cancel.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+  el.displayName.addEventListener('input', refreshProfileAvatarPreview);
+  el.photoPickBtn.addEventListener('click', () => el.photoFile.click());
+  el.photoRemoveBtn.addEventListener('click', () => {
+    localState.removePhoto = true;
+    localState.selectedPhotoFile = null;
+    el.photoFile.value = '';
+    refreshProfileAvatarPreview();
+    el.msg.textContent = 'Photo will be removed when you save.';
+    el.msg.classList.remove('ok');
+  });
+  el.photoFile.addEventListener('change', () => {
+    const file = el.photoFile.files && el.photoFile.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      el.msg.textContent = 'Please choose an image file.';
+      el.msg.classList.remove('ok');
+      el.photoFile.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      el.msg.textContent = 'Image must be smaller than 5MB.';
+      el.msg.classList.remove('ok');
+      el.photoFile.value = '';
+      return;
+    }
+    localState.selectedPhotoFile = file;
+    localState.removePhoto = false;
+    const objectUrl = URL.createObjectURL(file);
+    localState.photoURL = objectUrl;
+    refreshProfileAvatarPreview();
+    el.msg.textContent = 'Photo selected. Click Save to upload.';
+    el.msg.classList.remove('ok');
+  });
+
+  el.save.addEventListener('click', async () => {
+    const nextDisplayName = el.displayName.value.trim();
+    const nextPhone = el.phone.value.trim();
+    const nextTitle = el.title.value.trim();
+
+    if (!nextDisplayName) {
+      el.msg.textContent = 'Display name is required.';
+      el.msg.classList.remove('ok');
+      return;
+    }
+
+    el.save.disabled = true;
+    el.msg.textContent = '';
+    try {
+      let nextPhotoURL = (profile.photoURL || user.photoURL || '').trim();
+      const avatarRef = storageRef(storage, `users/${user.uid}/avatar`);
+      if (localState.selectedPhotoFile) {
+        await uploadBytes(avatarRef, localState.selectedPhotoFile, {
+          contentType: localState.selectedPhotoFile.type,
+        });
+        nextPhotoURL = await getDownloadURL(avatarRef);
+      } else if (localState.removePhoto) {
+        nextPhotoURL = '';
+      }
+
+      await setDoc(userRef, {
+        displayName: nextDisplayName,
+        phone: nextPhone,
+        title: nextTitle,
+        photoURL: nextPhotoURL,
+      }, { merge: true });
+
+      if (user.displayName !== nextDisplayName || (user.photoURL || '') !== nextPhotoURL) {
+        await updateProfile(user, {
+          displayName: nextDisplayName,
+          photoURL: nextPhotoURL || null,
+        });
+      }
+
+      profile.displayName = nextDisplayName;
+      profile.phone = nextPhone;
+      profile.title = nextTitle;
+      profile.photoURL = nextPhotoURL;
+      window.userProfile = profile;
+      refreshNav(nextDisplayName, nextPhotoURL);
+
+      el.msg.textContent = 'Profile updated.';
+      el.msg.classList.add('ok');
+      setTimeout(close, 450);
+    } catch (err) {
+      console.error('profile update failed', err);
+      el.msg.textContent = 'Could not save profile. Please try again.';
+      el.msg.classList.remove('ok');
+    } finally {
+      el.save.disabled = false;
+    }
   });
 }
 
@@ -177,16 +560,15 @@ onAuthStateChanged(auth, async (user) => {
   const logoutBtn   = document.getElementById('logoutBtn');
 
   if (navUserName) {
-    navUserName.textContent = displayName
-      ? displayName.split(' ')[0]
-      : user.email;
+    navUserName.textContent = displayName || user.email;
   }
 
   if (navAvatar) {
-    const initials = displayName
-      ? displayName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-      : user.email[0].toUpperCase();
-    navAvatar.textContent = initials;
+    applyAvatarVisual(navAvatar, displayName, user.email, profile.photoURL || user.photoURL || '');
+  }
+
+  if (navUserName && navAvatar) {
+    mountProfileModal({ user, profile, userRef, navUserName, navAvatar });
   }
 
   if (logoutBtn) {
