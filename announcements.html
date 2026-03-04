@@ -135,6 +135,19 @@
     .plat-on-teachers { background: #dcfce7; color: #166534; border-color: #86efac; }
     .plat-off { background: var(--paper-2); color: var(--ink-3); border-color: var(--border); opacity: 0.55; }
 
+    /* CATEGORY CHIPS (filter bar) */
+    .category-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .cat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 15px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--white); font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--ink-2); cursor: pointer; transition: all 0.15s; user-select: none; }
+    .cat-chip:hover { border-color: #a5b4fc; color: var(--ink); background: #faf8ff; }
+    .cat-chip.active { border-color: transparent; color: #fff; }
+    .cat-chip-all.active       { background: var(--ink); }
+    .cat-chip-assignments.active { background: #0891b2; }
+    .cat-chip-academics.active   { background: #7c3aed; }
+    .cat-chip-appraisals.active  { background: #d97706; }
+    .badge-assignments { background: #e0f2fe; color: #0e7490; }
+    .badge-academics   { background: #ede9fe; color: #5b21b6; }
+    .badge-appraisals  { background: #fef3c7; color: #92400e; }
+
     /* EMPTY / SKELETON */
     .empty-state { padding: 60px; text-align: center; color: var(--ink-3); font-size: 0.9rem; }
     .skel { background: linear-gradient(90deg,var(--paper-2) 25%,var(--paper) 50%,var(--paper-2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; display: block; }
@@ -323,6 +336,21 @@
         New Announcement
       </button>
     </div>
+    <div class="category-filter" id="catFilter">
+      <button class="cat-chip cat-chip-all active" data-cat="all">All</button>
+      <button class="cat-chip cat-chip-assignments" data-cat="assignments">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Assignments
+      </button>
+      <button class="cat-chip cat-chip-academics" data-cat="academics">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        Academics
+      </button>
+      <button class="cat-chip cat-chip-appraisals" data-cat="appraisals">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        Appraisals
+      </button>
+    </div>
     <div class="announcements-list" id="annList">
       <!-- skeleton -->
       <div class="ann-card"><span class="skel" style="height:20px;width:60%;margin-bottom:10px"></span><span class="skel" style="height:14px;width:100%;margin-bottom:6px"></span><span class="skel" style="height:14px;width:80%"></span></div>
@@ -357,6 +385,15 @@
           <button type="button" class="modal-image-remove" id="removeImageBtn">Remove image</button>
         </div>
         <div class="modal-image-help">PNG, JPG, WEBP. Max 5 MB.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fieldCategory">Category</label>
+        <select class="form-input" id="fieldCategory">
+          <option value="">No category</option>
+          <option value="assignments">Assignments</option>
+          <option value="academics">Academics</option>
+          <option value="appraisals">Appraisals</option>
+        </select>
       </div>
       <label class="form-check">
         <input type="checkbox" id="fieldPinned">
@@ -408,6 +445,7 @@
   const PAGE_SIZE = 5;
   let currentPage = 1;
   let isAdmin = false;
+  let activeCategory = 'all';
   let editingId = null;
   let currentUser = null;
   let modalImageFile = null;
@@ -447,6 +485,14 @@
   function bindControls() {
     document.getElementById('showFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
     document.getElementById('sortFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
+    document.getElementById('catFilter').addEventListener('click', e => {
+      const chip = e.target.closest('.cat-chip');
+      if (!chip) return;
+      activeCategory = chip.dataset.cat;
+      document.querySelectorAll('.cat-chip').forEach(c => c.classList.toggle('active', c === chip));
+      currentPage = 1;
+      applyFilters();
+    });
     document.getElementById('addAnnBtn').addEventListener('click', openAddModal);
     document.getElementById('modalClose').addEventListener('click', closeModal);
     document.getElementById('cancelBtn').addEventListener('click', closeModal);
@@ -462,7 +508,11 @@
   function applyFilters() {
     const show = document.getElementById('showFilter').value;
     const sort = document.getElementById('sortFilter').value;
-    let list = allAnns.filter(a => show === 'pinned' ? a.pinned : true);
+    let list = allAnns.filter(a => {
+      if (show === 'pinned' && !a.pinned) return false;
+      if (activeCategory !== 'all' && a.category !== activeCategory) return false;
+      return true;
+    });
     list = [...list].sort((a, b) => {
       const ta = a.createdAt?.toMillis?.() || 0;
       const tb = b.createdAt?.toMillis?.() || 0;
@@ -517,6 +567,9 @@
       const initials = author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
       const pinClass = a.pinned ? ' pinned' : '';
       const pinBadge = a.pinned ? '<span class="badge badge-amber">Pinned</span>' : '';
+      const catLabels = { assignments: 'Assignments', academics: 'Academics', appraisals: 'Appraisals' };
+      const catBadge = a.category && catLabels[a.category]
+        ? `<span class="badge badge-${a.category}">${catLabels[a.category]}</span>` : '';
       const plats = a.platforms || ['centralhub'];
       const checkOn = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
       const checkOff = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
@@ -554,6 +607,7 @@
             <div class="ann-title-wrap">
               <h2 class="ann-title">${esc(a.title || 'Untitled')}</h2>
               ${pinBadge}
+              ${catBadge}
             </div>
             ${adminActions}
           </div>
@@ -612,6 +666,7 @@
     document.getElementById('modalTitle').textContent = 'New Announcement';
     document.getElementById('fieldTitle').value = '';
     document.getElementById('fieldBody').value = '';
+    document.getElementById('fieldCategory').value = '';
     document.getElementById('fieldPinned').checked = false;
     document.getElementById('platCentral').checked = true;
     document.getElementById('platAcademic').checked = false;
@@ -636,6 +691,7 @@
     document.getElementById('modalTitle').textContent = 'Edit Announcement';
     document.getElementById('fieldTitle').value = a.title || '';
     document.getElementById('fieldBody').value = a.body || '';
+    document.getElementById('fieldCategory').value = a.category || '';
     document.getElementById('fieldPinned').checked = !!a.pinned;
     const plats = a.platforms || ['centralhub'];
     document.getElementById('platCentral').checked = plats.includes('centralhub');
@@ -670,6 +726,7 @@
   async function saveAnn() {
     const title = document.getElementById('fieldTitle').value.trim();
     const body = document.getElementById('fieldBody').value.trim();
+    const category = document.getElementById('fieldCategory').value;
     const pinned = document.getElementById('fieldPinned').checked;
     if (!title || !body) {
       showErr('Title and content are required.');
@@ -706,10 +763,10 @@
       }
 
       if (editingId) {
-        await updateDoc(fsDoc(db, 'announcements', editingId), { title, body, pinned, platforms, imageUrl, imagePath });
+        await updateDoc(fsDoc(db, 'announcements', editingId), { title, body, category, pinned, platforms, imageUrl, imagePath });
       } else {
         await addDoc(collection(db, 'announcements'), {
-          title, body, pinned, platforms, imageUrl, imagePath,
+          title, body, category, pinned, platforms, imageUrl, imagePath,
           author: currentUser.displayName || currentUser.email,
           createdAt: serverTimestamp(),
         });
