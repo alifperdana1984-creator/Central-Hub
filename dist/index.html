@@ -314,6 +314,15 @@
       align-items: center;
       gap: 6px;
     }
+    .qc-count {
+      color: #6b7280;
+      font-weight: 700;
+      font-size: 0.84rem;
+      letter-spacing: 0.01em;
+    }
+    .qc-count.has-data {
+      color: #dc2626;
+    }
     .qc-desc {
       font-size: 0.81rem;
       color: var(--ink-3);
@@ -804,7 +813,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Schools</p>
+            <p class="qc-title">Schools <span class="qc-count" id="quickCountSchools">(—)</span></p>
             <p class="qc-desc">Browse and manage all registered school institutions</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -821,7 +830,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Staff</p>
+            <p class="qc-title">Staff <span class="qc-count" id="quickCountStaff">(—)</span></p>
             <p class="qc-desc">HR records, staff profiles, and role management</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -837,7 +846,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Announcements</p>
+            <p class="qc-title">Announcements <span class="qc-count" id="quickCountAnnouncements">(—)</span></p>
             <p class="qc-desc">Post and manage network-wide announcements</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -852,7 +861,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Message Board</p>
+            <p class="qc-title">Message Board <span class="qc-count" id="quickCountMessageboard">(—)</span></p>
             <p class="qc-desc">Forum discussions across all departments</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -871,7 +880,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Documents</p>
+            <p class="qc-title">Documents <span class="qc-count" id="quickCountDocuments">(—)</span></p>
             <p class="qc-desc">Shared files, policies, and official documents</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -888,7 +897,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Activities</p>
+            <p class="qc-title">Activities <span class="qc-count" id="quickCountActivities">(—)</span></p>
             <p class="qc-desc">Track tasks, projects, and ongoing activities across the network</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -906,7 +915,7 @@
             </svg>
           </div>
           <div class="qc-body">
-            <p class="qc-title">Calendar</p>
+            <p class="qc-title">Calendar <span class="qc-count" id="quickCountCalendar">(—)</span></p>
             <p class="qc-desc">School-year events, assessments, and key dates</p>
           </div>
           <svg class="qc-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1066,9 +1075,19 @@
     document.getElementById('heroTitle').textContent = `Welcome, ${firstName}`;
 
     loadStats();
+    loadQuickAccessCounts();
     loadActivity();
     loadBoards();
   });
+
+  function setQuickCount(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = `(${value})`;
+    const num = Number(value);
+    const hasData = Number.isFinite(num) && num > 0;
+    el.classList.toggle('has-data', hasData);
+  }
 
   // ----- Stats -----
   async function loadStats() {
@@ -1083,11 +1102,45 @@
       document.getElementById('statStaff').textContent         = staffSnap.size;
       document.getElementById('statDocs').textContent          = docsSnap.size;
       document.getElementById('statAnnouncements').textContent = announcementsSnap.size;
+      setQuickCount('quickCountSchools', schoolsSnap.size);
+      setQuickCount('quickCountStaff', staffSnap.size);
+      setQuickCount('quickCountDocuments', docsSnap.size);
+      setQuickCount('quickCountAnnouncements', announcementsSnap.size);
     } catch (err) {
       console.error('Stats load error:', err);
       ['statSchools','statStaff','statDocs','statAnnouncements'].forEach(id => {
         document.getElementById(id).textContent = '—';
       });
+      ['quickCountSchools','quickCountStaff','quickCountDocuments','quickCountAnnouncements'].forEach(id => {
+        setQuickCount(id, '—');
+      });
+    }
+  }
+
+  async function loadQuickAccessCounts() {
+    try {
+      const [topicsSnap, projectsSnap] = await Promise.all([
+        getDocs(collection(db, 'topics')),
+        getDocs(collection(db, 'activity_projects')),
+      ]);
+      setQuickCount('quickCountMessageboard', topicsSnap.size);
+      setQuickCount('quickCountActivities', projectsSnap.size);
+    } catch (err) {
+      console.error('Quick access count load error:', err);
+      setQuickCount('quickCountMessageboard', '—');
+      setQuickCount('quickCountActivities', '—');
+    }
+
+    // Calendar count mirrors calendar data source used in academic-calendar page.
+    try {
+      const CALENDAR_API_URL = "https://script.google.com/macros/s/AKfycbzi-8Cyh9MYI_AwKyOY9QzS65bfBcNvN4bxhMB7DHiruzoq6ZXfq3P8CyeJumS0pbpZ/exec";
+      const res = await fetch(CALENDAR_API_URL);
+      const data = await res.json();
+      const count = Array.isArray(data) ? data.length : 0;
+      setQuickCount('quickCountCalendar', count);
+    } catch (err) {
+      console.error('Calendar count load error:', err);
+      setQuickCount('quickCountCalendar', '—');
     }
   }
 
