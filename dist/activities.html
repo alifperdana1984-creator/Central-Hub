@@ -237,7 +237,6 @@
   </a>
   <div class="nav-links">
     <a href="index" class="nav-link">Dashboard</a>
-    <a href="activities" class="nav-link active">Activities</a>
     <a href="https://teachershub.eduversal.org" class="nav-link" target="_blank" rel="noopener">Teachers Hub</a>
     <a href="https://academichub.eduversal.org" class="nav-link" target="_blank" rel="noopener">Academic Hub</a>
   </div>
@@ -632,8 +631,7 @@ window.selectProject = async (projectId) => {
   try {
     const snap = await getDocs(query(
       collection(db, 'activity_tasks'),
-      where('projectId', '==', projectId),
-      orderBy('createdAt', 'asc')
+      where('projectId', '==', projectId)
     ));
     tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderProjectHeader(project);
