@@ -722,26 +722,27 @@
     <div class="stat-card">
       <div class="stat-icon si-green" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="9" y1="13" x2="15" y2="13"/>
+          <line x1="9" y1="17" x2="15" y2="17"/>
         </svg>
       </div>
-      <p class="stat-label">Active Schools</p>
-      <p class="stat-value" id="statActive"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
-      <p class="stat-sub">currently operating</p>
+      <p class="stat-label">Documents</p>
+      <p class="stat-value" id="statDocs"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
+      <p class="stat-sub">registered documents</p>
     </div>
 
     <div class="stat-card">
       <div class="stat-icon si-amber" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M10 20h4"/>
         </svg>
       </div>
-      <p class="stat-label">Pending Staff</p>
-      <p class="stat-value" id="statPending"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
-      <p class="stat-sub">awaiting approval</p>
+      <p class="stat-label">Announcements</p>
+      <p class="stat-value" id="statAnnouncements"><span class="skel" style="width:32px;height:32px;border-radius:6px"></span></p>
+      <p class="stat-sub">total announcements</p>
     </div>
 
   </div><!-- /stats-row -->
@@ -1030,19 +1031,19 @@
   // ----- Stats -----
   async function loadStats() {
     try {
-      const [schoolsSnap, staffSnap, activeSnap, pendingSnap] = await Promise.all([
+      const [schoolsSnap, staffSnap, docsSnap, announcementsSnap] = await Promise.all([
         getDocs(collection(db, 'schools')),
         getDocs(collection(db, 'staff')),
-        getDocs(query(collection(db, 'schools'), where('status', '==', 'active'))),
-        getDocs(query(collection(db, 'staff'), where('status', '==', 'pending'))),
+        getDocs(collection(db, 'central_documents')),
+        getDocs(collection(db, 'announcements')),
       ]);
-      document.getElementById('statSchools').textContent = schoolsSnap.size;
-      document.getElementById('statStaff').textContent   = staffSnap.size;
-      document.getElementById('statActive').textContent  = activeSnap.size;
-      document.getElementById('statPending').textContent = pendingSnap.size;
+      document.getElementById('statSchools').textContent       = schoolsSnap.size;
+      document.getElementById('statStaff').textContent         = staffSnap.size;
+      document.getElementById('statDocs').textContent          = docsSnap.size;
+      document.getElementById('statAnnouncements').textContent = announcementsSnap.size;
     } catch (err) {
       console.error('Stats load error:', err);
-      ['statSchools','statStaff','statActive','statPending'].forEach(id => {
+      ['statSchools','statStaff','statDocs','statAnnouncements'].forEach(id => {
         document.getElementById(id).textContent = '—';
       });
     }
