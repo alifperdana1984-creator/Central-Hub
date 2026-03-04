@@ -657,7 +657,6 @@ import {
   collection, getDocs, addDoc, updateDoc, deleteDoc, setDoc,
   doc, query, where, orderBy, serverTimestamp, increment
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-import { signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const STATUS = {
@@ -694,14 +693,9 @@ document.addEventListener('authReady', ({ detail: { user } }) => {
   isAdmin = window.userProfile?.role_centralhub === 'central_admin';
 
   // Nav user info
-  const name = user.displayName || user.email || '';
-  document.getElementById('navUserName').textContent = name;
-  document.getElementById('navAvatar').textContent = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() || '?';
-
-  // Logout
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    signOut(window.auth).then(() => { window.location.href = 'login'; });
-  });
+  const name = window.userProfile?.displayName || user.displayName || user.email || '';
+  const navNameEl = document.querySelector('.nav-user-name');
+  if (navNameEl) navNameEl.textContent = name;
 
   // Show admin controls
   if (isAdmin) {

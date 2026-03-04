@@ -223,8 +223,63 @@ function ensureProfileModalStyles() {
     .profile-avatar-file {
       display: none;
     }
+    .nav-profile-trigger {
+      transition: color .15s ease, background-color .15s ease, box-shadow .15s ease;
+    }
+    .nav-user-name.nav-profile-trigger {
+      border-radius: 6px;
+      padding: 4px 6px;
+      margin: -4px -6px;
+    }
+    .nav-user-name.nav-profile-trigger:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .nav-avatar.nav-profile-trigger:hover {
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+      cursor: pointer;
+    }
   `;
   document.head.appendChild(style);
+}
+
+function formatPhoneInputValue(rawValue) {
+  const hasPlus = rawValue.trim().startsWith('+');
+  let digits = rawValue.replace(/\D/g, '');
+
+  if (!digits) return hasPlus ? '+' : '';
+
+  if (hasPlus && digits.startsWith('62')) {
+    const country = '+62';
+    const local = digits.slice(2, 13);
+    const a = local.slice(0, 3);
+    const b = local.slice(3, 7);
+    const c = local.slice(7, 11);
+    return [country, a, b, c].filter(Boolean).join(' ');
+  }
+
+  if (!hasPlus && digits.startsWith('0')) {
+    const local = digits.slice(0, 12);
+    const a = local.slice(0, 4);
+    const b = local.slice(4, 8);
+    const c = local.slice(8, 12);
+    return [a, b, c].filter(Boolean).join(' ');
+  }
+
+  if (hasPlus) {
+    digits = digits.slice(0, 15);
+    const countryLen = Math.min(3, digits.length);
+    const country = `+${digits.slice(0, countryLen)}`;
+    const rest = digits.slice(countryLen);
+    const chunks = rest.match(/.{1,3}/g) || [];
+    return [country, ...chunks].join(' ').trim();
+  }
+
+  digits = digits.slice(0, 15);
+  return (digits.match(/.{1,3}/g) || []).join(' ').trim();
 }
 
 function getInitials(displayName, email) {
@@ -265,6 +320,8 @@ function mountProfileModal({ user, profile, userRef, navUserName, navAvatar }) {
   navAvatar.style.cursor = 'pointer';
   navUserName.title = 'Open profile';
   navAvatar.title = 'Open profile';
+  navUserName.classList.add('nav-profile-trigger');
+  navAvatar.classList.add('nav-profile-trigger');
 
   const overlay = document.createElement('div');
   overlay.className = 'profile-modal-overlay';
@@ -408,10 +465,19 @@ function mountProfileModal({ user, profile, userRef, navUserName, navAvatar }) {
     el.msg.textContent = 'Photo selected. Click Save to upload.';
     el.msg.classList.remove('ok');
   });
+  el.phone.addEventListener('input', () => {
+    const before = el.phone.value;
+    const prevStart = el.phone.selectionStart || el.phone.value.length;
+    const next = formatPhoneInputValue(before);
+    el.phone.value = next;
+    const delta = next.length - before.length;
+    const nextPos = Math.min(next.length, Math.max(0, prevStart + delta));
+    el.phone.setSelectionRange(nextPos, nextPos);
+  });
 
   el.save.addEventListener('click', async () => {
     const nextDisplayName = el.displayName.value.trim();
-    const nextPhone = el.phone.value.trim();
+    const nextPhone = formatPhoneInputValue(el.phone.value.trim());
     const nextTitle = el.title.value.trim();
 
     if (!nextDisplayName) {
