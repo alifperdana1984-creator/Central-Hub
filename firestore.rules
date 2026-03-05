@@ -260,6 +260,17 @@ service cloud.firestore {
       allow create, update, delete:  if isAdmin();
     }
 
+    // ── section_overrides (Academic Standards inline edits) ─
+    match /section_overrides/{sectionId} {
+      allow read: if isAuthorized();
+      allow write: if isAHAdmin();
+
+      match /subsections/{subId} {
+        allow read: if isAuthorized();
+        allow write: if isAHAdmin();
+      }
+    }
+
     // ── topics (message board) ─────────────────────────────
     match /topics/{topicId} {
       allow read:   if isAuthorized();

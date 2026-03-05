@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /section-images/{sectionId}/{subId}/{filename} {
+      allow read: if request.auth != null;
+      allow write, delete: if request.auth != null
+        && (firestore.get(
+              /databases/(default)/documents/users/$(request.auth.uid)
+            ).data.role_academichub == 'academic_admin'
+           || firestore.get(
+                /databases/(default)/documents/users/$(request.auth.uid)
+              ).data.role_centralhub == 'central_admin');
+    }
+  }
+}
