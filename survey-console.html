@@ -2923,9 +2923,11 @@
 
         return questions
           .map((q, i) => {
-            const qId = q.id || String(i);
+            // answers is a list (array) indexed by question position
             const answers = responses
-              .map((r) => r.answers?.[qId])
+              .map((r) =>
+                Array.isArray(r.answers) ? r.answers[i] : r.answers?.[q.id || String(i)],
+              )
               .filter((a) => a != null && a !== "");
             const type = q.type || "text";
             let bodyHtml;
@@ -3023,7 +3025,7 @@
         const rows = responses.map((r, i) => [
           i + 1,
           ...questions.map((q, qi) => {
-            const a = r.answers?.[q.id || String(qi)] ?? "";
+            const a = (Array.isArray(r.answers) ? r.answers[qi] : r.answers?.[q.id || String(qi)]) ?? "";
             const s = String(a).replace(/"/g, '""');
             return `"${s}"`;
           }),
