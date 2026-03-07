@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Survey Console - CentralHub</title>
-  <title>Survey Console | Eduversal Central Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    /* ===== Design Tokens & Base Styles (from index.html) ===== */
     :root {
       --ink:#1c1c2e; --ink-2:#44445a; --ink-3:#8888a8;
       --paper:#f7f6f3; --paper-2:#efede8; --white:#ffffff;
@@ -18,11 +16,6 @@
       --shadow:0 3px 14px rgba(28,28,46,.10);
       --shadow-lg:0 10px 40px rgba(28,28,46,.16);
       --radius:10px;
-      --ink:       #1c1c2e; --ink-2:     #44445a; --ink-3:     #8888a8;
-      --paper:     #f7f6f3; --paper-2:   #efede8; --white:     #ffffff;
-      --border:    #e0ddd6; --accent:    #0891b2; --accent-dk: #0e7490;
-      --accent-2:  #e0f2fe; --shadow-sm: 0 1px 4px rgba(28,28,46,.07);
-      --shadow:    0 3px 14px rgba(28,28,46,.10); --radius:    10px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
@@ -60,9 +53,6 @@
       padding: 28px 32px;
       width: min(100%, 980px);
       margin: 0 auto;
-    body {
-      font-family: 'DM Sans', sans-serif; background: var(--paper);
-      color: var(--ink); min-height: 100vh;
     }
     .main-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; flex-wrap: gap; gap: 12px; }
     .main-header h1 { font-size: 1.4rem; font-weight: 600; }
@@ -85,11 +75,6 @@
       font-weight: 600;
       cursor: pointer;
       transition: all .15s ease;
-    .page-wrap { max-width: 1400px; margin: 0 auto; padding: 32px 40px 64px; }
-    .skel {
-      background: linear-gradient(90deg, var(--paper-2) 25%, var(--paper) 50%, var(--paper-2) 75%);
-      background-size: 200% 100%; animation: shimmer 1.5s infinite;
-      border-radius: 4px; display: inline-block;
     }
     .ann-page-btn:hover:not(:disabled) { border-color: #c4b5fd; color: var(--ink); background: #faf8ff; }
     .ann-page-btn.active { background: linear-gradient(135deg,#7c3aed,#0891b2); color: #fff; border-color: transparent; }
@@ -110,12 +95,6 @@
       border: 1px solid var(--border);
       cursor: zoom-in;
       background: var(--paper-2);
-    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .btn {
-        font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600;
-        padding: 8px 16px; border-radius: 6px; text-decoration: none;
-        display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-        border: 1px solid transparent; transition: all 0.2s ease;
     }
     .ann-body { font-size: 0.88rem; color: var(--ink-2); line-height: 1.65; margin-bottom: 14px; }
     .ann-body.truncated { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -133,8 +112,6 @@
     .btn-icon-delete:hover { color: #dc2626; border-color: #fca5a5; background: #fee2e2; }
     .admin-actions { display: none; align-items: center; gap: 6px; }
     .admin-actions.visible { display: flex; }
-    .btn-primary { background: var(--accent); color: var(--white); border-color: var(--accent); }
-    .btn-primary:hover { background: var(--accent-dk); border-color: var(--accent-dk); }
 
     /* BADGES */
     .badge { display: inline-flex; align-items: center; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
@@ -207,48 +184,14 @@
       padding: 7px 0;
       font-size: 0.84rem;
       color: var(--ink-2);
-    /* ===== Survey Console Specific Styles ===== */
-    .console-layout {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 28px;
-      align-items: flex-start;
     }
     .modal-image-preview {
       display: none;
       border: 1px solid var(--border);
-    .console-sidebar {
-      position: sticky;
-      top: 86px; /* 62px nav + 24px padding */
-      height: calc(100vh - 110px);
-      display: flex;
-      flex-direction: column;
-    }
-    .sidebar-header {
-      padding: 0 4px 14px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .sidebar-title { font-size: 1.1rem; font-weight: 600; }
-    .survey-list {
-      list-style: none;
-      overflow-y: auto;
-      flex-grow: 1;
-      margin: 8px -8px 0;
-      padding: 0 8px;
-    }
-    .survey-list-item {
-      padding: 12px;
       border-radius: 8px;
       padding: 8px;
       background: var(--paper);
       margin-top: 6px;
-      cursor: pointer;
-      transition: background 0.2s ease;
-      border: 1px solid transparent;
-      margin-bottom: 6px;
     }
     .modal-image-preview.visible { display: block; }
     .modal-image-preview img {
@@ -257,11 +200,6 @@
       object-fit: cover;
       border-radius: 6px;
       display: block;
-    .survey-list-item:hover { background: var(--paper-2); }
-    .survey-list-item.active {
-      background: var(--accent-2);
-      border-color: var(--accent);
-      font-weight: 600;
     }
     .modal-image-remove {
       margin-top: 8px;
@@ -269,53 +207,15 @@
       border: 1px solid #fca5a5;
       color: #dc2626;
       border-radius: 6px;
-    .survey-item-title {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--ink);
-      margin-bottom: 6px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .survey-list-item.active .survey-item-title { font-weight: 600; }
-    .survey-item-meta {
       font-size: 0.78rem;
       padding: 5px 9px;
       cursor: pointer;
-      color: var(--ink-3);
-      display: flex;
-      justify-content: space-between;
     }
     .modal-image-help { font-size: 0.76rem; color: var(--ink-3); margin-top: 4px; }
-    .survey-item-meta .status {
-      font-weight: 700;
-      text-transform: capitalize;
-    }
-    .survey-item-meta .status.published { color: #059669; }
-    .survey-item-meta .status.draft { color: #D97706; }
-    .survey-item-meta .status.closed { color: #DC2626; }
 
     /* MEETING MINUTES CATEGORY */
     .cat-chip-meeting-minutes.active { background: #0f766e; }
     .badge-meeting-minutes { background: #ccfbf1; color: #134e4a; }
-    .console-main { min-width: 0; }
-    .main-empty-state {
-      background: var(--white);
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 80px 40px;
-      text-align: center;
-      color: var(--ink-3);
-    }
-    .main-empty-state svg {
-      width: 48px; height: 48px;
-      margin: 0 auto 16px;
-      stroke-width: 1.5;
-    }
-    .main-empty-state h3 {
-      font-size: 1.2rem;
-      color: var(--ink-2);
-      margin-bottom: 8px;
-    }
 
     /* LOCKED BADGE */
     .badge-locked { background: #fee2e2; color: #991b1b; }
@@ -395,25 +295,13 @@
       z-index: 300;
       align-items: center;
       justify-content: center;
-    .survey-details-header {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
       padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-sm);
     }
     .image-lightbox.open { display: flex; }
     .lightbox-content {
       position: relative;
       max-width: min(96vw, 1080px);
       max-height: 90vh;
-    .survey-details-title {
-      font-family: 'Lora', serif;
-      font-size: 1.7rem;
-      font-weight: 600;
-      color: var(--ink);
-      margin-bottom: 16px;
     }
     .lightbox-image {
       display: block;
@@ -424,16 +312,6 @@
       object-fit: contain;
       box-shadow: 0 22px 70px rgba(0, 0, 0, 0.5);
       background: rgba(255, 255, 255, 0.02);
-    .survey-details-meta { display: flex; gap: 24px; font-size: 0.85rem; color: var(--ink-2); }
-    .meta-item { display: flex; align-items: center; gap: 8px; }
-    .meta-item svg { width: 16px; height: 16px; color: var(--ink-3); }
-
-    .question-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 16px;
-      box-shadow: var(--shadow-sm);
     }
     .lightbox-close {
       position: absolute;
@@ -448,14 +326,7 @@
       font-size: 1.3rem;
       line-height: 1;
       cursor: pointer;
-    .question-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--paper-2);
     }
-    .question-text { font-size: 1rem; font-weight: 600; color: var(--ink); }
-    .question-meta { font-size: 0.8rem; color: var(--ink-3); margin-top: 4px; }
-    .question-body { padding: 20px; }
-    .no-responses { font-size: 0.9rem; color: var(--ink-3); text-align: center; padding: 20px; }
 
     /* RESPONSIVE */
     @media (max-width: 1024px) {
@@ -463,28 +334,6 @@
       .nav-link { padding: 6px 9px; font-size: 0.8rem; }
       .nav-user-name { display: none; }
       .btn-logout { padding: 5px 9px; font-size: 0.76rem; }
-    /* Response Visualizations */
-    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
-    .bar-item { display: grid; grid-template-columns: 120px 1fr 50px; align-items: center; gap: 12px; font-size: 0.85rem; }
-    .bar-label { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-progress { height: 18px; background: var(--paper-2); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; background: var(--accent); transition: width 0.5s ease; }
-    .bar-value { font-weight: 600; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-
-    .rating-summary { display: flex; align-items: center; gap: 32px; }
-    .rating-avg { text-align: center; }
-    .rating-avg-value { font-size: 2.5rem; font-weight: 600; line-height: 1; color: var(--accent); }
-    .rating-avg-label { font-size: 0.8rem; color: var(--ink-3); margin-top: 4px; }
-
-    .text-responses { max-height: 300px; overflow-y: auto; }
-    .text-response-item {
-      background: var(--paper);
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      color: var(--ink-2);
-      margin-bottom: 8px;
-      border: 1px solid var(--paper-2);
     }
     @media (max-width: 640px) {
       .top-nav { height: 58px; padding: 0 10px; gap: 10px; }
@@ -508,10 +357,6 @@
         color: rgba(255,255,255,0.75);
         font-size: 14px;
       }
-
-    @media (max-width: 960px) {
-      .console-layout { grid-template-columns: 1fr; }
-      .console-sidebar { position: static; height: auto; max-height: 40vh; }
     }
     @media (max-width: 768px) {
       .page-layout { grid-template-columns: 1fr; }
@@ -524,17 +369,9 @@
 </head>
 <body>
 
-<!-- ===== TOP NAV ===== -->
 <!-- SHARED_NAVBAR -->
 
 <div class="page-layout">
-<!-- ===== HERO ===== -->
-<section class="hero" aria-label="Page banner" style="padding: 36px 40px;">
-  <div class="hero-inner">
-    <h1 class="hero-title" style="font-size: 1.8rem;">Survey Console</h1>
-    <p class="hero-date">Create, manage, and analyze surveys across the Eduversal network.</p>
-  </div>
-</section>
 
   <!-- SIDEBAR -->
   <aside class="sidebar" aria-label="Filters">
@@ -543,18 +380,6 @@
       <div class="search-input-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input class="search-input" id="searchInput" type="text" placeholder="Search surveys..." autocomplete="off">
-<!-- ===== MAIN CONTENT ===== -->
-<div class="page-wrap">
-  <div class="console-layout">
-
-    <!-- LEFT: Survey List -->
-    <aside class="console-sidebar">
-      <div class="sidebar-header">
-        <h2 class="sidebar-title">All Surveys</h2>
-        <a href="#" class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Survey
-        </a>
       </div>
     </div>
     <div class="sidebar-section">
@@ -587,13 +412,6 @@
       <div class="sidebar-stat"><span>Pinned</span><span class="sidebar-stat-val" id="statPinned">â€”</span></div>
     </div>
   </aside>
-      <ul class="survey-list" id="surveyList">
-        <!-- Skeleton Loader -->
-        <li><div class="skel" style="width:100%; height: 68px; margin-bottom: 6px;"></div></li>
-        <li><div class="skel" style="width:100%; height: 68px; margin-bottom: 6px;"></div></li>
-        <li><div class="skel" style="width:100%; height: 68px; margin-bottom: 6px;"></div></li>
-      </ul>
-    </aside>
 
   <!-- MAIN -->
   <main class="main-content">
@@ -614,14 +432,6 @@
     <div class="ann-pagination" id="annPagination"></div>
   </main>
 </div>
-    <!-- RIGHT: Selected Survey Details -->
-    <main class="console-main" id="consoleMain">
-      <div class="main-empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-        <h3>Select a Survey</h3>
-        <p>Choose a survey from the list on the left to view its details and responses.</p>
-      </div>
-    </main>
 
 <!-- CREATE / EDIT MODAL -->
 <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -703,22 +513,6 @@
     collection, getDocs, addDoc, updateDoc, deleteDoc, doc as fsDoc, query, orderBy, where, serverTimestamp
   } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-<script type="module">
-  import { collection, getDocs, query, orderBy, where, doc, getDoc }
-    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-
-  // --- UTILS ---
-  function esc(str) {
-    return String(str || '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-  function formatDate(ts) {
-    const d = ts?.toDate?.();
-    if (!d) return '–';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-  }
-
   let db;
   let allAnns = [];
   const PAGE_SIZE = 5;
@@ -729,30 +523,19 @@
   let editingId = null;
   let currentUser = null;
   let qbItems = [];
-  const surveyListEl = document.getElementById('surveyList');
-  const consoleMainEl = document.getElementById('consoleMain');
-  let allSurveys = [];
-  let surveyResponseCounts = {};
 
   const LIKERT_LABELS = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
 
   document.addEventListener('authReady', async ({ detail: { user, profile } }) => {
-  document.addEventListener('authReady', ({ detail }) => {
     db = window.db;
     currentUser = user;
     isAdmin = profile.role === 'central_admin';
     if (isAdmin) document.getElementById('addAnnBtn').style.display = 'flex';
     bindControls();
     await loadSurveys();
-    loadSurveys();
   });
 
-  /**
-   * Fetches all surveys and their response counts, then renders the list.
-   */
   async function loadSurveys() {
-    surveyListEl.innerHTML = `<li><div class="skel" style="width:100%; height: 68px; margin-bottom: 6px;"></div></li><li><div class="skel" style="width:100%; height: 68px; margin-bottom: 6px;"></div></li>`;
-
     try {
       const baseRef = collection(db, 'surveys');
       const snap = isAdmin
@@ -773,23 +556,11 @@
       document.getElementById('annPagination').innerHTML = '';
     }
   }
-      // Fetch all surveys
-      const surveysSnap = await getDocs(query(collection(db, 'surveys'), orderBy('createdAt', 'desc')));
-      allSurveys = surveysSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
   function updateStats() {
     document.getElementById('statTotal').textContent = allAnns.length;
     document.getElementById('statPinned').textContent = allAnns.filter(a => a.pinned).length;
   }
-      // Fetch all response counts in a single pass
-      const responsesSnap = await getDocs(collection(db, 'survey_responses'));
-      surveyResponseCounts = {};
-      responsesSnap.forEach(resDoc => {
-        const surveyId = resDoc.data().surveyId;
-        if (surveyId) {
-          surveyResponseCounts[surveyId] = (surveyResponseCounts[surveyId] || 0) + 1;
-        }
-      });
 
   function bindControls() {
     document.getElementById('showFilter').addEventListener('change', () => { currentPage = 1; applyFilters(); });
@@ -871,10 +642,6 @@
     if (totalItems <= PAGE_SIZE || totalPages <= 1) {
       el.innerHTML = '';
       return;
-      renderSurveyList();
-    } catch (err) {
-      console.error("Error loading surveys:", err);
-      surveyListEl.innerHTML = `<li class="main-empty-state" style="padding:20px">Could not load surveys.</li>`;
     }
 
     const nums = Array.from({ length: totalPages }, (_, i) => i + 1).map(p => `
@@ -898,12 +665,6 @@
     const el = document.getElementById('annList');
     if (!list.length) {
       el.innerHTML = '<div class="empty-state">No surveys found.</div>';
-  /**
-   * Renders the list of surveys in the sidebar.
-   */
-  function renderSurveyList() {
-    if (allSurveys.length === 0) {
-      surveyListEl.innerHTML = `<li class="main-empty-state" style="padding:20px">No surveys found.</li>`;
       return;
     }
 
@@ -948,9 +709,6 @@
       const questions = getCardQuestions(a);
       const questionsHtml = buildQuestionsCardHtml(questions);
 
-    surveyListEl.innerHTML = allSurveys.map(s => {
-      const status = String(s.status || 'published').toLowerCase();
-      const responseCount = surveyResponseCounts[s.id] || 0;
       return `
         <article class="ann-card${pinClass}" id="ann-${a.id}">
           <div class="ann-top">
@@ -960,12 +718,6 @@
               ${statusBadge}
             </div>
             ${adminActions}
-        <li class="survey-list-item" data-id="${s.id}">
-          <p class="survey-item-title">${esc(s.title || 'Untitled Survey')}</p>
-          <div class="survey-item-meta">
-            <span>${formatDate(s.createdAt)}</span>
-            <span class="status ${status}">${esc(status)}</span>
-            <span>${responseCount} response${responseCount === 1 ? '' : 's'}</span>
           </div>
           <div class="ann-body truncated" id="body-${a.id}"></div>
           ${questionsHtml}
@@ -978,16 +730,11 @@
             <button class="btn-readmore" onclick="toggleRead('${a.id}')" data-expanded="false">Read more</button>
           </div>
         </article>`;
-        </li>
-      `;
     }).join('');
 
     list.forEach(a => {
       const bodyEl = document.getElementById('body-' + a.id);
       if (bodyEl) bodyEl.innerHTML = renderBody(a.body || '');
-    // Add click listeners
-    surveyListEl.querySelectorAll('.survey-list-item').forEach(item => {
-      item.addEventListener('click', () => handleSurveyClick(item.dataset.id));
     });
   }
 
@@ -999,13 +746,6 @@
     btn.textContent = expanded ? 'Read more' : 'Show less';
     btn.dataset.expanded = String(!expanded);
   }
-  /**
-   * Handles clicking a survey in the list.
-   */
-  function handleSurveyClick(surveyId) {
-    // Update active state in the list
-    surveyListEl.querySelector('.active')?.classList.remove('active');
-    surveyListEl.querySelector(`[data-id="${surveyId}"]`)?.classList.add('active');
 
   async function togglePin(id, currentlyPinned) {
     try {
@@ -1014,18 +754,10 @@
     } catch (e) {
       alert(e.message);
     }
-    // Load and render details
-    loadAndRenderSurveyDetails(surveyId);
   }
 
   async function deleteAnn(id) {
     if (!confirm('Delete this survey? This cannot be undone.')) return;
-  /**
-   * Fetches details and responses for a specific survey and renders them.
-   */
-  async function loadAndRenderSurveyDetails(surveyId) {
-    consoleMainEl.innerHTML = `<div class="skel" style="width:100%; height: 500px;"></div>`;
-
     try {
       await deleteDoc(fsDoc(db, 'surveys', id));
       allAnns = allAnns.filter(a => a.id !== id);
@@ -1035,12 +767,6 @@
       alert(e.message);
     }
   }
-      const surveySnap = await getDoc(doc(db, 'surveys', surveyId));
-      if (!surveySnap.exists()) {
-        consoleMainEl.innerHTML = `<div class="main-empty-state">Survey not found.</div>`;
-        return;
-      }
-      const survey = { id: surveySnap.id, ...surveySnap.data() };
 
   function openAddModal() {
     editingId = null;
@@ -1060,8 +786,6 @@
     document.getElementById('modalOverlay').classList.add('open');
     document.getElementById('fieldTitle').focus();
   }
-      const responsesSnap = await getDocs(query(collection(db, 'survey_responses'), where('surveyId', '==', surveyId)));
-      const responseCount = responsesSnap.size;
 
   function editAnn(id) {
     const a = allAnns.find(x => x.id === id);
@@ -1084,57 +808,20 @@
     document.getElementById('modalOverlay').classList.add('open');
     document.getElementById('fieldTitle').focus();
   }
-      const questions = survey.questions || [];
-      const aggregated = aggregateResponses(questions, responsesSnap.docs);
 
   function closeModal() {
     document.getElementById('modalOverlay').classList.remove('open');
   }
-      // Render header
-      const headerHtml = `
-        <div class="survey-details-header">
-          <h2 class="survey-details-title">${esc(survey.title)}</h2>
-          <div class="survey-details-meta">
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>
-              <span>${responseCount} Total Responses</span>
-            </div>
-            <div class="meta-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span>Created: ${formatDate(survey.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-      `;
 
   function showErr(msg) {
     const e = document.getElementById('modalError');
     e.textContent = msg;
     e.classList.add('visible');
   }
-      // Render question cards
-      const questionsHtml = questions.map((q, index) => {
-        const qId = q.id || `q_${index}`;
-        const result = aggregated[qId];
-        return `
-          <div class="question-card">
-            <div class="question-header">
-              <p class="question-text">${esc(q.text)}</p>
-              <p class="question-meta">
-                Type: <strong>${q.type || 'text'}</strong> &middot; ${result.total} responses
-              </p>
-            </div>
-            <div class="question-body">
-              ${renderQuestionResponse(result)}
-            </div>
-          </div>
-        `;
-      }).join('');
 
   function hideErr() {
     document.getElementById('modalError').classList.remove('visible');
   }
-      consoleMainEl.innerHTML = headerHtml + (questionsHtml || '<div class="main-empty-state" style="padding:40px">This survey has no questions.</div>');
 
   async function saveAnn() {
     const title = document.getElementById('fieldTitle').value.trim();
@@ -1147,11 +834,7 @@
     if (!title || !bodyEl.textContent.trim()) {
       showErr('Survey title and description are required.');
       return;
-    } catch (err) {
-      console.error(`Error loading details for survey ${surveyId}:`, err);
-      consoleMainEl.innerHTML = `<div class="main-empty-state">Could not load survey details.</div>`;
     }
-  }
 
     const questions = qbSerialize();
     const validQuestions = questions.filter(q => q.text.trim());
@@ -1187,24 +870,6 @@
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
-  /**
-   * Aggregates raw response documents into a structured result object.
-   */
-  function aggregateResponses(questions, responseDocs) {
-    const results = {};
-    // Initialize results structure for each question
-    questions.forEach((q, index) => {
-      const qId = q.id || `q_${index}`;
-      results[qId] = { question: q, total: 0 };
-      if (q.type === 'choice') {
-        results[qId].counts = {};
-        (q.options || []).forEach(opt => { results[qId].counts[opt] = 0; });
-        results[qId].counts['Other'] = 0;
-      } else if (q.type === 'rating') {
-        results[qId].sum = 0;
-        results[qId].average = 0;
-      } else { // text
-        results[qId].texts = [];
       }
       closeModal();
       await loadSurveys();
@@ -1215,17 +880,10 @@
       btn.textContent = editingId ? 'Update Survey' : 'Publish Survey';
     }
   }
-    });
 
   function esc(s) {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-    // Process each response document
-    responseDocs.forEach(resDoc => {
-      const answers = resDoc.data().answers || {}; // answers is a map { qId: value }
-      questions.forEach((q, index) => {
-        const qId = q.id || `q_${index}`;
-        const answer = answers[qId];
 
   function sanitizeHtml(html) {
     const tmp = document.createElement('div');
@@ -1235,21 +893,6 @@
       [...el.attributes].forEach(attr => {
         if (attr.name.startsWith('on') || attr.name === 'action') el.removeAttribute(attr.name);
         if ((attr.name === 'href' || attr.name === 'src') && /^javascript:/i.test(attr.value)) el.removeAttribute(attr.name);
-        if (answer !== undefined && answer !== null && String(answer).trim() !== '') {
-          results[qId].total++;
-          if (q.type === 'choice') {
-            if (results[qId].counts.hasOwnProperty(answer)) {
-              results[qId].counts[answer]++;
-            } else {
-              results[qId].counts['Other']++;
-            }
-          } else if (q.type === 'rating') {
-            const rating = Number(answer);
-            if (!isNaN(rating)) results[qId].sum += rating;
-          } else { // text
-            results[qId].texts.push(String(answer));
-          }
-        }
       });
     });
     return tmp.innerHTML;
@@ -1260,29 +903,16 @@
     tmp.innerHTML = html;
     return tmp.textContent || '';
   }
-    // Final calculations
-    Object.values(results).forEach(res => {
-      if (res.question.type === 'rating' && res.total > 0) {
-        res.average = res.sum / res.total;
-      }
-    });
 
   function renderBody(body) {
     if (!body) return '';
     if (/<[a-z][\s\S]*>/i.test(body)) return sanitizeHtml(body);
     return esc(body).replace(/\n/g, '<br>');
-    return results;
   }
 
   function parseQuestions(raw, listFromField) {
     if (Array.isArray(listFromField) && listFromField.length) {
       return listFromField.map(q => String(q || '').trim()).filter(Boolean);
-  /**
-   * Renders the appropriate visualization based on question type.
-   */
-  function renderQuestionResponse(result) {
-    if (result.total === 0) {
-      return `<div class="no-responses">No responses for this question yet.</div>`;
     }
     return String(raw || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
   }
@@ -1356,14 +986,6 @@
     if (item && item.options && item.options.length > 1) {
       item.options = item.options.filter((_, i) => i !== idx);
       renderQb();
-    switch (result.question.type) {
-      case 'choice':
-        return renderChoiceResponse(result);
-      case 'rating':
-        return renderRatingResponse(result);
-      case 'text':
-      default:
-        return renderTextResponse(result);
     }
   }
 
@@ -1371,29 +993,10 @@
     qbItems.push({ id: _qbId(), itemType: 'question', type, text: '', options: ['', ''], scale: 5 });
     renderQb();
   }
-  function renderChoiceResponse(result) {
-    const total = result.total;
-    const entries = Object.entries(result.counts).filter(([_, count]) => count > 0);
 
   function qbAddSection() {
     qbItems.push({ id: _qbId(), itemType: 'section', sectionTitle: '' });
     renderQb();
-    return `
-      <div class="bar-chart">
-        ${entries.map(([option, count]) => {
-          const pct = total > 0 ? (count / total) * 100 : 0;
-          return `
-            <div class="bar-item">
-              <span class="bar-label" title="${esc(option)}">${esc(option)}</span>
-              <div class="bar-progress">
-                <div class="bar-fill" style="width: ${pct.toFixed(1)}%;"></div>
-              </div>
-              <span class="bar-value">${count} (${pct.toFixed(0)}%)</span>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
   }
 
   function renderQb() {
@@ -1451,23 +1054,13 @@
           <span class="qb-item-num">Q${qNum}</span>
           <select class="qb-type-sel" onchange="qbChangeType('${item.id}',this.value)">${typeOpts}</select>
           <button type="button" class="qb-delete" onclick="qbRemove('${item.id}')" title="Remove question">&#215;</button>
-  function renderRatingResponse(result) {
-    return `
-      <div class="rating-summary">
-        <div class="rating-avg">
-          <div class="rating-avg-value">${result.average.toFixed(2)}</div>
-          <div class="rating-avg-label">Average Rating</div>
         </div>
         <div class="qb-item-body">
           <input class="form-input qb-text-input" placeholder="Question text…" value="${esc(item.text || '')}" oninput="qbUpdate('${item.id}','text',this.value)">
           ${optionsHtml}${ratingHtml}${likertHtml}
-        <div class="rating-meta">
-          Based on ${result.total} rating${result.total === 1 ? '' : 's'}.
         </div>
       </div>`;
     }).join('');
-      </div>
-    `;
   }
 
   function qbSerialize() {
@@ -1486,15 +1079,6 @@
       }
     });
     return result;
-  function renderTextResponse(result) {
-    return `
-      <div class="text-responses">
-        ${result.texts.slice(0, 50).map(text => `
-          <div class="text-response-item">${esc(text)}</div>
-        `).join('')}
-        ${result.texts.length > 50 ? `<div class="text-response-item" style="text-align:center;color:var(--ink-3)">... and ${result.texts.length - 50} more responses</div>` : ''}
-      </div>
-    `;
   }
 
   function qbDeserialize(questions, questionsRaw) {
