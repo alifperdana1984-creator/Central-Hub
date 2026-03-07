@@ -1710,7 +1710,10 @@
 
   function parseSurveyQuestions(raw, arr) {
     if (Array.isArray(arr) && arr.length) {
-      return arr.map((q) => String(q || '').trim()).filter(Boolean);
+      return arr.map((q) => {
+        if (typeof q === 'object' && q !== null) return String(q.text || '').trim();
+        return String(q || '').trim();
+      }).filter(Boolean);
     }
     return String(raw || '')
       .split(/\r?\n/)
@@ -1727,5 +1730,3 @@
 
 </body>
 </html>
-
-
