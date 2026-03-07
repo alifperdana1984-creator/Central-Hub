@@ -2731,6 +2731,184 @@
         return `<div class="q-summary-row">${summaryBadges}</div><div class="ann-platforms">${previews}${more}</div>`;
       }
 
+      // ── Results / Analysis view ───────────────────────────────────────
+
+      async function viewResults(surveyId) {
+        const survey = allAnns.find((a) => a.id === surveyId);
+        if (!survey) return;
+
+        document.getElementById("surveyListView").style.display = "none";
+        const av = document.getElementById("analysisView");
+        av.style.display = "block";
+
+        document.getElementById("analysisTitle").textContent =
+          survey.title || "Survey Results";
+        document.getElementById("analysisSubtitle").textContent =
+          "Loading responses…";
+        document.getElementById("statRespTotal").textContent = "…";
+        document.getElementById("statRespStatus").textContent =
+          survey.status || "published";
+        const questions = getCardQuestions(survey);
+        document.getElementById("statRespQCount").textContent = questions.length;
+        document.getElementById("analysisContent").innerHTML = "";
+
+        try {
+          const snap = await getDocs(
+            collection(db, "surveys", surveyId, "responses"),
+          );
+          const responses = snap.docs.map((d) => d.data());
+          const total = responses.length;
+          document.getElementById("statRespTotal").textContent = total;
+          document.getElementById(
+            "analysisSubtitle",
+          ).textContent = `${total} response${total !== 1 ? "s" : ""} · ${questions.length} question${questions.length !== 1 ? "s" : ""}`;
+          document.getElementById("analysisContent").innerHTML =
+            renderAnalysis(questions, responses);
+          document.getElementById("btnExportCSV").onclick = () =>
+            exportCSV(survey, questions, responses);
+        } catch (e) {
+          console.error("Failed to load responses:", e);
+          document.getElementById("analysisSubtitle").textContent =
+            "Failed to load responses.";
+        }
+      }
+
+      function closeResults() {
+        document.getElementById("analysisView").style.display = "none";
+        document.getElementById("surveyListView").style.display = "";
+      }
+
+      function renderAnalysis(questions, responses) {
+        if (!questions.length)
+          return '<div class="no-data">No questions defined for this survey.</div>';
+
+        const typeLabel = {
+          text: "Open-ended",
+          multiple_choice: "Multiple Choice",
+          rating: "Rating",
+          likert: "Likert",
+        };
+
+        return questions
+          .map((q, i) => {
+            const qId = q.id || String(i);
+            const answers = responses
+              .map((r) => r.answers?.[qId])
+              .filter((a) => a != null && a !== "");
+            const type = q.type || "text";
+            let bodyHtml;
+
+            if (!answers.length) {
+              bodyHtml = '<div class="no-data">No responses yet.</div>';
+            } else if (type === "multiple_choice") {
+              const counts = {};
+              (q.options || []).forEach((o) => (counts[o] = 0));
+              answers.forEach((a) => {
+                counts[a] = (counts[a] || 0) + 1;
+              });
+              const max = Math.max(...Object.values(counts), 1);
+              bodyHtml = Object.entries(counts)
+                .map(
+                  ([label, n]) => `
+                <div class="bar-row">
+                  <span class="bar-label">${esc(label)}</span>
+                  <div class="bar-track"><div class="bar-fill" style="width:${Math.round((n / max) * 100)}%"></div></div>
+                  <span class="bar-val">${n}</span>
+                </div>`,
+                )
+                .join("");
+            } else if (type === "likert") {
+              const labels = q.likertLabels || LIKERT_LABELS;
+              const counts = {};
+              labels.forEach((l) => (counts[l] = 0));
+              answers.forEach((a) => {
+                counts[a] = (counts[a] || 0) + 1;
+              });
+              const max = Math.max(...Object.values(counts), 1);
+              bodyHtml = labels
+                .map(
+                  (label) => `
+                <div class="bar-row">
+                  <span class="bar-label">${esc(label)}</span>
+                  <div class="bar-track"><div class="bar-fill" style="width:${Math.round(((counts[label] || 0) / max) * 100)}%"></div></div>
+                  <span class="bar-val">${counts[label] || 0}</span>
+                </div>`,
+                )
+                .join("");
+            } else if (type === "rating") {
+              const scale = q.scale || 5;
+              const counts = {};
+              for (let s = 1; s <= scale; s++) counts[s] = 0;
+              answers.forEach((a) => {
+                const n = Number(a);
+                if (n >= 1 && n <= scale) counts[n] = (counts[n] || 0) + 1;
+              });
+              const avg =
+                answers.reduce((s, a) => s + Number(a), 0) / answers.length;
+              const rounded = Math.round(avg);
+              const stars = "★".repeat(rounded) + "☆".repeat(scale - rounded);
+              const max = Math.max(...Object.values(counts), 1);
+              bodyHtml = `
+                <div class="rating-display">
+                  <span class="rating-avg">${avg.toFixed(1)}</span>
+                  <div>
+                    <div class="rating-stars">${stars}</div>
+                    <div style="font-size:0.8rem;color:var(--ink-3)">${answers.length} rating${answers.length !== 1 ? "s" : ""} · scale 1–${scale}</div>
+                  </div>
+                </div>
+                ${Object.entries(counts)
+                  .sort((a, b) => Number(a[0]) - Number(b[0]))
+                  .map(
+                    ([val, n]) => `
+                  <div class="bar-row" style="margin-top:12px">
+                    <span class="bar-label">${val} ★</span>
+                    <div class="bar-track"><div class="bar-fill" style="width:${Math.round((n / max) * 100)}%"></div></div>
+                    <span class="bar-val">${n}</span>
+                  </div>`,
+                  )
+                  .join("")}`;
+            } else {
+              bodyHtml = `<div class="text-resp-list">${answers.map((a) => `<div class="text-resp-item">${esc(String(a))}</div>`).join("")}</div>`;
+            }
+
+            return `
+            <div class="question-result">
+              <div class="qr-head">
+                <p class="qr-text">Q${i + 1}. ${esc(q.text || "")}</p>
+                <p class="qr-type">${typeLabel[type] || type} · ${answers.length} answer${answers.length !== 1 ? "s" : ""}</p>
+              </div>
+              <div class="qr-body">${bodyHtml}</div>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function exportCSV(survey, questions, responses) {
+        const headers = [
+          "Response #",
+          ...questions.map((q, i) => `Q${i + 1}: ${q.text || ""}`),
+        ];
+        const rows = responses.map((r, i) => [
+          i + 1,
+          ...questions.map((q, qi) => {
+            const a = r.answers?.[q.id || String(qi)] ?? "";
+            const s = String(a).replace(/"/g, '""');
+            return `"${s}"`;
+          }),
+        ]);
+        const csv = [
+          headers.map((h) => `"${String(h).replace(/"/g, '""')}"`).join(","),
+          ...rows.map((r) => r.join(",")),
+        ].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${(survey.title || "survey").replace(/[^a-z0-9]/gi, "_")}_results.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
       window.setPage = setPage;
       window.togglePin = togglePin;
       window.deleteAnn = deleteAnn;
