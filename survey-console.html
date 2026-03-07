@@ -2959,7 +2959,9 @@
               const counts = {};
               labels.forEach((l) => (counts[l] = 0));
               answers.forEach((a) => {
-                counts[a] = (counts[a] || 0) + 1;
+                // handle numeric values ("1","2"...) from older Teachers Hub responses
+                const key = counts.hasOwnProperty(a) ? a : labels[Number(a) - 1];
+                if (key !== undefined) counts[key] = (counts[key] || 0) + 1;
               });
               const max = Math.max(...Object.values(counts), 1);
               bodyHtml = labels
