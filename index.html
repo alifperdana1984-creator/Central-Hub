@@ -1512,6 +1512,229 @@
         background: var(--accent-2);
       }
 
+      /* ===== GLOBAL SEARCH ===== */
+      .search-bar-wrap {
+        position: relative;
+        flex: 1;
+        max-width: 420px;
+      }
+      .search-bar-input {
+        width: 100%;
+        height: 36px;
+        padding: 0 36px 0 38px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.855rem;
+        color: #fff;
+        outline: none;
+        transition: background 0.2s ease, border-color 0.2s ease;
+      }
+      .search-bar-input::placeholder { color: rgba(255,255,255,0.38); }
+      .search-bar-input:focus {
+        background: rgba(255,255,255,0.13);
+        border-color: rgba(8,145,178,0.7);
+      }
+      .search-bar-icon {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255,255,255,0.38);
+        pointer-events: none;
+      }
+      .search-bar-clear {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.38);
+        cursor: pointer;
+        padding: 2px;
+        display: none;
+        line-height: 1;
+      }
+      .search-bar-clear:hover { color: rgba(255,255,255,0.7); }
+      .search-bar-clear.visible { display: flex; align-items: center; }
+
+      /* Search Dropdown */
+      .search-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        min-width: 480px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 16px 48px rgba(28,28,46,0.22);
+        z-index: 9999;
+        overflow: hidden;
+        display: none;
+        max-height: 520px;
+        overflow-y: auto;
+      }
+      .search-dropdown.open { display: block; }
+
+      .search-dd-header {
+        padding: 10px 16px 8px;
+        border-bottom: 1px solid var(--paper-2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 1;
+      }
+      .search-dd-query {
+        font-size: 0.78rem;
+        color: var(--ink-3);
+      }
+      .search-dd-query strong { color: var(--ink); }
+      .search-dd-count {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .search-dd-section {
+        padding: 6px 0 2px;
+      }
+      .search-dd-section-label {
+        font-size: 0.67rem;
+        font-weight: 700;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-3);
+        padding: 4px 16px 4px;
+      }
+
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 16px;
+        text-decoration: none;
+        color: inherit;
+        transition: background 0.12s ease;
+        cursor: pointer;
+      }
+      .search-result-item:hover,
+      .search-result-item.focused {
+        background: var(--paper);
+      }
+      .sri-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .sri-body { flex: 1; min-width: 0; }
+      .sri-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .sri-title mark {
+        background: #fef08a;
+        color: var(--ink);
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+      .sri-meta {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 1px;
+      }
+      .sri-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 20px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      .search-dd-empty {
+        padding: 32px 16px;
+        text-align: center;
+        color: var(--ink-3);
+        font-size: 0.875rem;
+      }
+      .search-dd-empty svg { margin-bottom: 8px; opacity: 0.4; }
+
+      .search-dd-loading {
+        padding: 24px 16px;
+        text-align: center;
+        color: var(--ink-3);
+        font-size: 0.855rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .search-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .search-dd-divider {
+        height: 1px;
+        background: var(--paper-2);
+        margin: 2px 0;
+      }
+
+      .search-dd-footer {
+        padding: 8px 16px;
+        border-top: 1px solid var(--paper-2);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--paper);
+      }
+      .search-dd-footer-hint {
+        font-size: 0.72rem;
+        color: var(--ink-3);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .search-kbd {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 0.68rem;
+        color: var(--ink-3);
+      }
+      .search-kbd kbd {
+        background: var(--paper-2);
+        border: 1px solid var(--border);
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-family: "DM Mono", monospace;
+        font-size: 0.68rem;
+        color: var(--ink-2);
+      }
+
       /* ===== RESPONSIVE ===== */
       @media (max-width: 1100px) {
         .upcoming-cards {
@@ -1559,6 +1782,14 @@
         .upcoming-cards {
           grid-template-columns: repeat(2, 1fr);
         }
+        .search-bar-wrap {
+          max-width: 100%;
+        }
+        .search-dropdown {
+          min-width: 320px;
+          left: auto;
+          right: 0;
+        }
       }
       @media (max-width: 520px) {
         .stats-row {
@@ -1584,6 +1815,63 @@
   <body>
     <!-- ===== TOP NAV ===== -->
     <!-- SHARED_NAVBAR -->
+
+    <!-- ===== GLOBAL SEARCH BAR (injected into nav by JS) ===== -->
+    <nav class="top-nav" id="globalNav" aria-label="Main navigation">
+      <a href="/" class="nav-brand">
+        <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="50" fill="#0a0a1a"/>
+          <polygon points="10,45 50,65 50,70 10,50" fill="#4e3db8"/>
+          <polygon points="90,45 50,65 50,70 90,50" fill="#5a4bd1"/>
+          <polygon points="50,25 90,45 50,65 10,45" fill="#6c5ce7"/>
+          <line x1="85" y1="46" x2="85" y2="68" stroke="#ffd93d" stroke-width="4" stroke-linecap="round"/>
+          <circle cx="85" cy="72" r="3.5" fill="#ffd93d"/>
+        </svg>
+        <span class="nav-brand-name">Central Hub</span>
+      </a>
+      <div class="nav-links">
+        <a href="schools" class="nav-link">Schools</a>
+        <a href="staff" class="nav-link">Staff</a>
+        <a href="announcements" class="nav-link">Announcements</a>
+        <a href="documents" class="nav-link">Documents</a>
+        <a href="activities" class="nav-link">Activities</a>
+      </div>
+
+      <!-- Global Search -->
+      <div class="search-bar-wrap" id="globalSearchWrap">
+        <svg class="search-bar-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="search"
+          id="globalSearchInput"
+          class="search-bar-input"
+          placeholder="Search schools, staff, documents…"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search database"
+          aria-expanded="false"
+          aria-haspopup="listbox"
+          role="combobox"
+        />
+        <button class="search-bar-clear" id="searchClearBtn" aria-label="Clear search" tabindex="-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <!-- Dropdown -->
+        <div class="search-dropdown" id="searchDropdown" role="listbox" aria-label="Search results">
+          <div class="search-dd-loading" id="searchLoading">
+            <div class="search-spinner"></div>
+            Searching…
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-auth" id="navAuth">
+        <span class="nav-user-name" id="navUserName"></span>
+        <div class="nav-avatar" id="navAvatar" aria-hidden="true"></div>
+        <button class="btn-logout" id="navLogout">Sign out</button>
+      </div>
+    </nav>
 
     <!-- ===== HERO ===== -->
     <section class="hero" aria-label="Welcome banner">
@@ -3795,6 +4083,402 @@
           year: "numeric",
         });
       }
+
+      // ===== NAV AUTH (populate user info in our custom nav) =====
+      document.addEventListener("authReady", ({ detail: { user } }) => {
+        const nameEl = document.getElementById("navUserName");
+        const avatarEl = document.getElementById("navAvatar");
+        if (nameEl && user.displayName) nameEl.textContent = user.displayName.split(" ")[0];
+        if (avatarEl) {
+          const initials = (user.displayName || user.email || "U")
+            .split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
+          avatarEl.textContent = initials;
+        }
+        const logoutBtn = document.getElementById("navLogout");
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", async () => {
+            try { await window.auth.signOut(); } catch(e) {}
+            window.location.href = "login";
+          });
+        }
+      });
+
+      // ===== GLOBAL SEARCH ENGINE =====
+      (function initGlobalSearch() {
+        const input    = document.getElementById("globalSearchInput");
+        const dropdown = document.getElementById("searchDropdown");
+        const clearBtn = document.getElementById("searchClearBtn");
+        if (!input || !dropdown) return;
+
+        let _debounceTimer = null;
+        let _currentQuery  = "";
+        let _focusedIdx    = -1;
+        let _allItems      = [];   // flat list of rendered <a> items for keyboard nav
+
+        // ── helpers ──────────────────────────────────────────────────────────────
+        function highlight(text, q) {
+          if (!q) return esc(text);
+          const safe = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return esc(text).replace(
+            new RegExp(`(${safe})`, "gi"),
+            "<mark>$1</mark>"
+          );
+        }
+
+        function openDropdown() {
+          dropdown.classList.add("open");
+          input.setAttribute("aria-expanded", "true");
+        }
+        function closeDropdown() {
+          dropdown.classList.remove("open");
+          input.setAttribute("aria-expanded", "false");
+          _focusedIdx = -1;
+          _allItems = [];
+        }
+
+        function showLoading() {
+          openDropdown();
+          dropdown.innerHTML = `<div class="search-dd-loading"><div class="search-spinner"></div>Searching…</div>`;
+        }
+
+        function clientFilter(docs, q, fields) {
+          const lq = q.toLowerCase();
+          return docs.filter(d =>
+            fields.some(f => String(d[f] || "").toLowerCase().includes(lq))
+          );
+        }
+
+        // ── SVG icons per category ────────────────────────────────────────────────
+        const ICONS = {
+          school: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`,
+          staff:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+          doc:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>`,
+          ann:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M10 20h4"/></svg>`,
+          topic:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+          proj:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/><polyline points="9 13 11 15 15 11"/></svg>`,
+          cert:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"/><path d="M8 20l4-3 4 3"/><path d="M8 8h8"/></svg>`,
+          survey: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+        };
+
+        const COLORS = {
+          school: { bg: "#e0f2fe", color: "#0891b2" },
+          staff:  { bg: "#ede9fe", color: "#7c3aed" },
+          doc:    { bg: "#f0f9ff", color: "#0284c7" },
+          ann:    { bg: "#fef3c7", color: "#d97706" },
+          topic:  { bg: "#d1fae5", color: "#059669" },
+          proj:   { bg: "#ede9fe", color: "#7c3aed" },
+          cert:   { bg: "#f0f9ff", color: "#0284c7" },
+          survey: { bg: "#e0e7ff", color: "#4338ca" },
+        };
+
+        function buildItem(href, iconKey, title, meta, badge, badgeColor, q) {
+          const c = COLORS[iconKey] || COLORS.doc;
+          return `
+            <a href="${esc(href)}" class="search-result-item" role="option">
+              <div class="sri-icon" style="background:${c.bg};color:${c.color}">${ICONS[iconKey] || ICONS.doc}</div>
+              <div class="sri-body">
+                <p class="sri-title">${highlight(title, q)}</p>
+                ${meta ? `<p class="sri-meta">${esc(meta)}</p>` : ""}
+              </div>
+              ${badge ? `<span class="sri-badge" style="background:${badgeColor || c.bg};color:${c.color}">${esc(badge)}</span>` : ""}
+            </a>`;
+        }
+
+        function buildSection(label, itemsHtml) {
+          return `<div class="search-dd-section">
+            <p class="search-dd-section-label">${label}</p>
+            ${itemsHtml}
+          </div><div class="search-dd-divider"></div>`;
+        }
+
+        // ── Main search function ──────────────────────────────────────────────────
+        async function runSearch(q) {
+          if (!db) {
+            dropdown.innerHTML = `<div class="search-dd-empty">Please wait — database loading…</div>`;
+            openDropdown();
+            return;
+          }
+
+          showLoading();
+          const lq = q.toLowerCase();
+
+          try {
+            // Fetch all collections in parallel (client-side filter — no composite index needed)
+            const [
+              schoolsSnap,
+              staffSnap,
+              docsSnap,
+              annSnap,
+              topicsSnap,
+              projSnap,
+              certSnap,
+              surveysSnap,
+            ] = await Promise.allSettled([
+              getDocs(collection(db, "schools")),
+              getDocs(collection(db, "staff")),
+              getDocs(collection(db, "central_documents")),
+              getDocs(collection(db, "announcements")),
+              getDocs(collection(db, "topics")),
+              getDocs(collection(db, "activity_projects")),
+              getDocs(collection(db, "central_certificates")),
+              getDocs(collection(db, "surveys")),
+            ]);
+
+            const get = (res) => res.status === "fulfilled"
+              ? res.value.docs.map(d => ({ id: d.id, ...d.data() }))
+              : [];
+
+            // ── Filter each collection ──────────────────────────────────────────
+            const schools = get(schoolsSnap).filter(d =>
+              [d.name, d.city, d.country, d.type, d.code].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 5);
+
+            const staff = get(staffSnap).filter(d =>
+              [d.name, d.email, d.school, d.position, d.department, d.role].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 5);
+
+            const docs = get(docsSnap).filter(d =>
+              [d.title, d.category, d.type, d.description, d.tags].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 5);
+
+            const anns = get(annSnap).filter(d =>
+              [d.title, d.body, d.content, d.author].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 4);
+
+            const topics = get(topicsSnap).filter(d =>
+              [d.title, d.body, d.content, d.author, d.category].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 4);
+
+            const projects = get(projSnap).filter(d =>
+              [d.name, d.description, d.status].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 4);
+
+            const certs = get(certSnap).filter(d =>
+              [d.recipientName, d.certificateNumber, d.workshopTitle, d.school].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 4);
+
+            const surveys = get(surveysSnap).filter(d =>
+              [d.title, d.description].some(f =>
+                String(f || "").toLowerCase().includes(lq)
+              )
+            ).slice(0, 3);
+
+            // ── Build HTML ──────────────────────────────────────────────────────
+            const totalCount = schools.length + staff.length + docs.length +
+              anns.length + topics.length + projects.length + certs.length + surveys.length;
+
+            if (totalCount === 0) {
+              dropdown.innerHTML = `
+                <div class="search-dd-empty">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  No results for <strong>"${esc(q)}"</strong>
+                  <br><span style="font-size:0.78rem;margin-top:4px;display:block">Try a different keyword or check spelling</span>
+                </div>`;
+              return;
+            }
+
+            let html = `
+              <div class="search-dd-header">
+                <span class="search-dd-query">Results for <strong>${esc(q)}</strong></span>
+                <span class="search-dd-count">${totalCount} found</span>
+              </div>`;
+
+            if (schools.length) {
+              html += buildSection("Schools",
+                schools.map(d => buildItem("schools", "school",
+                  d.name || "—",
+                  [d.city, d.country].filter(Boolean).join(", "),
+                  d.type || null, null, q
+                )).join("")
+              );
+            }
+
+            if (staff.length) {
+              html += buildSection("Staff",
+                staff.map(d => buildItem("staff", "staff",
+                  d.name || "—",
+                  [d.position, d.school].filter(Boolean).join(" · "),
+                  d.department || null, null, q
+                )).join("")
+              );
+            }
+
+            if (docs.length) {
+              html += buildSection("Documents",
+                docs.map(d => buildItem(
+                  d.driveLink || "documents", "doc",
+                  d.title || "—",
+                  [d.category, d.type].filter(Boolean).join(" · "),
+                  d.status || null, null, q
+                )).join("")
+              );
+            }
+
+            if (anns.length) {
+              html += buildSection("Announcements",
+                anns.map(d => buildItem("announcements", "ann",
+                  d.title || "—",
+                  d.author || "",
+                  d.pinned ? "Pinned" : null, "#fef3c7", q
+                )).join("")
+              );
+            }
+
+            if (topics.length) {
+              html += buildSection("Message Board",
+                topics.map(d => buildItem("messageboard", "topic",
+                  d.title || "—",
+                  [d.author, d.category].filter(Boolean).join(" · "),
+                  null, null, q
+                )).join("")
+              );
+            }
+
+            if (projects.length) {
+              html += buildSection("Activities",
+                projects.map(d => buildItem("activities", "proj",
+                  d.name || "—",
+                  d.description ? d.description.slice(0, 60) : "",
+                  d.status || null, null, q
+                )).join("")
+              );
+            }
+
+            if (certs.length) {
+              html += buildSection("Certificates",
+                certs.map(d => buildItem("certificates", "cert",
+                  d.recipientName || d.workshopTitle || "—",
+                  [d.certificateNumber, d.school].filter(Boolean).join(" · "),
+                  null, null, q
+                )).join("")
+              );
+            }
+
+            if (surveys.length) {
+              html += buildSection("Surveys",
+                surveys.map(d => buildItem("surveys", "survey",
+                  d.title || "—",
+                  d.description ? d.description.slice(0, 60) : "",
+                  d.status || null, null, q
+                )).join("")
+              );
+            }
+
+            html += `
+              <div class="search-dd-footer">
+                <span class="search-dd-footer-hint">
+                  <span class="search-kbd"><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                  <span class="search-kbd"><kbd>Enter</kbd> open</span>
+                  <span class="search-kbd"><kbd>Esc</kbd> close</span>
+                </span>
+                <span style="font-size:0.72rem;color:var(--ink-3)">${totalCount} result${totalCount !== 1 ? "s" : ""}</span>
+              </div>`;
+
+            dropdown.innerHTML = html;
+
+            // Collect all result items for keyboard navigation
+            _allItems = Array.from(dropdown.querySelectorAll(".search-result-item"));
+            _focusedIdx = -1;
+
+          } catch (err) {
+            console.error("Search error:", err);
+            dropdown.innerHTML = `<div class="search-dd-empty">Search error. Please try again.</div>`;
+          }
+        }
+
+        // ── Event listeners ───────────────────────────────────────────────────────
+        input.addEventListener("input", () => {
+          const q = input.value.trim();
+          clearBtn.classList.toggle("visible", q.length > 0);
+
+          if (!q) { closeDropdown(); return; }
+          if (q === _currentQuery) return;
+          _currentQuery = q;
+
+          clearTimeout(_debounceTimer);
+          if (q.length < 2) { closeDropdown(); return; }
+
+          _debounceTimer = setTimeout(() => runSearch(q), 320);
+        });
+
+        input.addEventListener("focus", () => {
+          if (input.value.trim().length >= 2 && _currentQuery === input.value.trim()) {
+            openDropdown();
+          }
+        });
+
+        clearBtn.addEventListener("click", () => {
+          input.value = "";
+          _currentQuery = "";
+          clearBtn.classList.remove("visible");
+          closeDropdown();
+          input.focus();
+        });
+
+        // Keyboard navigation
+        input.addEventListener("keydown", (e) => {
+          if (!dropdown.classList.contains("open")) return;
+
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            _allItems = Array.from(dropdown.querySelectorAll(".search-result-item"));
+            _focusedIdx = Math.min(_focusedIdx + 1, _allItems.length - 1);
+            updateFocus();
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            _allItems = Array.from(dropdown.querySelectorAll(".search-result-item"));
+            _focusedIdx = Math.max(_focusedIdx - 1, -1);
+            updateFocus();
+          } else if (e.key === "Enter") {
+            if (_focusedIdx >= 0 && _allItems[_focusedIdx]) {
+              e.preventDefault();
+              _allItems[_focusedIdx].click();
+            }
+          } else if (e.key === "Escape") {
+            closeDropdown();
+            input.blur();
+          }
+        });
+
+        function updateFocus() {
+          _allItems.forEach((el, i) => {
+            el.classList.toggle("focused", i === _focusedIdx);
+            if (i === _focusedIdx) el.scrollIntoView({ block: "nearest" });
+          });
+        }
+
+        // Close on outside click
+        document.addEventListener("click", (e) => {
+          if (!document.getElementById("globalSearchWrap")?.contains(e.target)) {
+            closeDropdown();
+          }
+        });
+
+        // Global keyboard shortcut: / or Ctrl+K to focus search
+        document.addEventListener("keydown", (e) => {
+          if ((e.key === "/" || (e.ctrlKey && e.key === "k")) &&
+              document.activeElement !== input &&
+              !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)) {
+            e.preventDefault();
+            input.focus();
+            input.select();
+          }
+        });
+      })();
 
       // ===== FEEDBACK MODAL FUNCTIONALITY =====
       const feedbackBtn = document.getElementById("feedbackBtn");
