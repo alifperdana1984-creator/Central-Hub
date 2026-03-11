@@ -138,6 +138,21 @@
     .detail-key { font-size: 0.76rem; font-weight: 500; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.06em; }
     .detail-val { font-size: 0.9rem; color: var(--ink); }
     .detail-social-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    /* PROFILE STATS */
+    .profile-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .stat-chip { display: flex; flex-direction: column; align-items: center; padding: 8px 14px; background: var(--paper); border: 1px solid var(--border); border-radius: 8px; min-width: 78px; flex: 1; }
+    .stat-chip-val { font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+    .stat-chip-label { font-size: 0.68rem; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; text-align: center; }
+    /* ADMISSIONS TABLE */
+    .modal-body { max-height: 70vh; overflow-y: auto; }
+    .admissions-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 6px; }
+    .admissions-table th { text-align: left; color: var(--ink-3); font-weight: 500; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+    .admissions-table th:last-child { text-align: right; }
+    .admissions-table td { padding: 5px 8px; border-bottom: 1px solid var(--paper-2); color: var(--ink); }
+    .admissions-table td:last-child { text-align: right; }
+    .admissions-table tr:last-child td { border-bottom: none; }
+    .admissions-total td { font-weight: 600; background: var(--paper-2); border-radius: 0; }
+    .admissions-note { font-size: 0.71rem; color: var(--ink-3); margin-top: 5px; }
     .social-link { display: inline-flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--paper); text-decoration: none; color: var(--ink); font-size: 0.82rem; font-weight: 500; transition: transform 0.16s, border-color 0.2s, background 0.2s; }
     .social-link:hover { transform: translateY(-1px); border-color: #cfc8ba; background: #f2efea; }
     .social-pill { min-width: 34px; text-align: center; padding: 2px 7px; border-radius: 999px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; border: 1px solid transparent; }
@@ -406,6 +421,45 @@
       </div>`).join('');
   }
 
+  // ===== Admission year display labels =====
+  const YEAR_ORDER  = ['2017_2018','2018_2019','2019_2020','2020_2021','2021_2022','2022_2023','2023_2024','2024_2025','2025_2026_ongoing'];
+  const YEAR_LABELS = { '2017_2018':'2017/18','2018_2019':'2018/19','2019_2020':'2019/20','2020_2021':'2020/21','2021_2022':'2021/22','2022_2023':'2022/23','2023_2024':'2023/24','2024_2025':'2024/25','2025_2026_ongoing':'2025/26*' };
+
+  function renderProfileStats(s) {
+    const teach = s.teaching_staff, nteach = s.non_teaching_staff, stu = s.students;
+    if (teach == null && nteach == null && stu == null) return '';
+    const chips = [
+      teach  != null ? `<div class="stat-chip"><span class="stat-chip-val">${teach}</span><span class="stat-chip-label">Teaching Staff</span></div>` : '',
+      nteach != null ? `<div class="stat-chip"><span class="stat-chip-val">${nteach}</span><span class="stat-chip-label">Non-Teaching Staff</span></div>` : '',
+      stu    != null ? `<div class="stat-chip"><span class="stat-chip-val">${stu}</span><span class="stat-chip-label">Students</span></div>` : '',
+    ].filter(Boolean).join('');
+    return `<div class="detail-field"><p class="detail-key">Staff & Students</p><div class="detail-val"><div class="profile-stats">${chips}</div></div></div>`;
+  }
+
+  function renderAdmissions(s) {
+    if (!s.admissions || typeof s.admissions !== 'object') return '';
+    const rows = YEAR_ORDER
+      .filter(k => s.admissions[k] != null)
+      .map(k => `<tr><td>${YEAR_LABELS[k]}</td><td>${s.admissions[k]}</td></tr>`)
+      .join('');
+    if (!rows) return '';
+    const hasOngoing = s.admissions['2025_2026_ongoing'] != null;
+    const total = s.total_admission != null
+      ? `<tfoot><tr class="admissions-total"><td>Total (2017–2025)</td><td>${s.total_admission}</td></tr></tfoot>` : '';
+    return `
+      <div class="detail-field">
+        <p class="detail-key">Admission History</p>
+        <div class="detail-val">
+          <table class="admissions-table">
+            <thead><tr><th>Academic Year</th><th>New Students</th></tr></thead>
+            <tbody>${rows}</tbody>
+            ${total}
+          </table>
+          ${hasOngoing ? '<p class="admissions-note">* Ongoing enrolment</p>' : ''}
+        </div>
+      </div>`;
+  }
+
   // ===== View detail =====
   function viewSchool(id) {
     const s = allSchools.find(x => x.id === id);
@@ -413,12 +467,18 @@
     viewingId = id;
     document.getElementById('detailTitle').textContent = s.name || 'School Details';
     const typesText = getSchoolTypes(s).join(', ');
-        document.getElementById('detailBody').innerHTML = `
+    const repRow = s.foundation_representative
+      ? `<div class="detail-field"><p class="detail-key">Foundation Representative</p><p class="detail-val">${esc(s.foundation_representative)}</p></div>`
+      : '';
+    document.getElementById('detailBody').innerHTML = `
       <div class="detail-field"><p class="detail-key">Name</p><p class="detail-val">${esc(s.name||'-')}</p></div>
       <div class="detail-field"><p class="detail-key">Type</p><p class="detail-val">${esc(typesText||'-')}</p></div>
       <div class="detail-field"><p class="detail-key">City</p><p class="detail-val">${esc(s.city||'-')}</p></div>
       <div class="detail-field"><p class="detail-key">Status</p><p class="detail-val">${STATUS_BADGE[s.status]||s.status||'-'}</p></div>
       <div class="detail-field"><p class="detail-key">Admin Email</p><p class="detail-val">${esc(s.adminEmail||'-')}</p></div>
+      ${repRow}
+      ${renderProfileStats(s)}
+      ${renderAdmissions(s)}
       <div class="detail-field"><p class="detail-key">Website & Social</p><div class="detail-val">${renderSocialLinks(s)}</div></div>`;
     if (isAdmin) document.getElementById('detailEditBtn').style.display = 'inline-flex';
     document.getElementById('detailOverlay').classList.add('open');
