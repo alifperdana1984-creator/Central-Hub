@@ -169,6 +169,11 @@
     .save-feedback { font-size: 0.8rem; color: #059669; display: none; align-items: center; gap: 4px; }
     .save-feedback.show { display: flex; }
 
+    /* ===== TASK RESOURCE CHIPS (list view) ===== */
+    .task-resource-links { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .task-resource-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; font-weight: 500; color: var(--accent); background: var(--accent-2); border-radius: 4px; padding: 2px 7px; text-decoration: none; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: background 0.15s; }
+    .task-resource-chip:hover { background: #bae6fd; }
+
     /* ===== RESOURCES ===== */
     .resource-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
     .resource-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; background: var(--paper); border: 1px solid var(--border); border-radius: 7px; }
@@ -496,11 +501,11 @@
       <label class="detail-label">Resources</label>
       <div class="resource-list" id="detailResourceList"></div>
       <div class="resource-add-form admin-only" id="resourceAddForm">
-        <input type="url" id="resourceUrlInput" placeholder="https://drive.google.com/… veya YouTube linki">
-        <input type="text" id="resourceNoteInput" placeholder="Kısa açıklama (isteğe bağlı)">
+        <input type="url" id="resourceUrlInput" placeholder="https://drive.google.com/… or YouTube link">
+        <input type="text" id="resourceNoteInput" placeholder="Short description (optional)">
         <button class="btn-add-resource" onclick="addDetailResource()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Link Ekle
+          Add Link
         </button>
       </div>
     </div>
@@ -1186,6 +1191,7 @@ function renderTaskTable(filterStatus = 'all', search = '') {
           data-id="${task.id}" onclick="openDetailPanel('${task.id}')">
         <td class="task-name-cell">
           ${task.status === 'completed' ? `<s>${esc(task.name)}</s>` : esc(task.name)}
+          ${Array.isArray(task.resources) && task.resources.length ? `<div class="task-resource-links">${task.resources.map(r => `<a class="task-resource-chip" href="${esc(r.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${esc(r.note || r.url)}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>${esc(r.note || r.url)}</a>`).join('')}</div>` : ''}
         </td>
         <td>
           <span class="status-badge" style="color:${s.color};background:${s.bg}">${s.label}</span>
@@ -1218,7 +1224,7 @@ window.applyFilters = () => {
 function renderDetailResources() {
   const list = document.getElementById('detailResourceList');
   if (!detailResources.length) {
-    list.innerHTML = isAdmin ? '' : '<p style="font-size:0.84rem;color:var(--ink-3)">Kaynak eklenmemiş.</p>';
+    list.innerHTML = isAdmin ? '' : '<p style="font-size:0.84rem;color:var(--ink-3)">No resources added.</p>';
     return;
   }
   list.innerHTML = detailResources.map((r, i) => `
@@ -1228,7 +1234,7 @@ function renderDetailResources() {
         <a class="resource-item-url" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a>
         ${r.note ? `<div class="resource-item-note">${esc(r.note)}</div>` : ''}
       </div>
-      ${isAdmin ? `<button class="btn-remove-resource" onclick="removeDetailResource(${i})" title="Kaldır" aria-label="Kaynağı kaldır">
+      ${isAdmin ? `<button class="btn-remove-resource" onclick="removeDetailResource(${i})" title="Remove" aria-label="Remove resource">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>` : ''}
     </div>
@@ -1237,7 +1243,7 @@ function renderDetailResources() {
 
 window.addDetailResource = () => {
   const url = document.getElementById('resourceUrlInput').value.trim();
-  if (!url) { showToast('Lütfen bir URL girin.'); return; }
+  if (!url) { showToast('Please enter a URL.'); return; }
   const note = document.getElementById('resourceNoteInput').value.trim();
   detailResources.push({ url, note });
   document.getElementById('resourceUrlInput').value  = '';
