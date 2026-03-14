@@ -378,6 +378,26 @@
     showView('list');
   }
 
+  // ===== Render badges =====
+  function renderBadges(t) {
+    let html = '';
+    const statusMap = {
+      open:        { cls: 'ws-badge-open',        label: 'OPEN' },
+      in_progress: { cls: 'ws-badge-in_progress', label: 'IN PROGRESS' },
+      closed:      { cls: 'ws-badge-closed',       label: 'CLOSED' },
+    };
+    const s = statusMap[t.status];
+    if (s) html += `<span class="ws-badge ${s.cls}">${s.label}</span>`;
+    if (t.workspaceCategory) {
+      html += `<span class="ws-cat-badge">${esc(t.workspaceCategory)}</span>`;
+    }
+    if (t.deadline) {
+      const d = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
+      html += `<span class="ws-deadline-badge">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`;
+    }
+    return html;
+  }
+
   // ===== Render topics =====
   function renderTopics() {
     const q    = document.getElementById('searchInput').value.toLowerCase();
@@ -396,14 +416,18 @@
     el.innerHTML = list.map(t => {
       const initials = (t.author||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       const date = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      const isClosed  = t.status === 'closed';
+      const rowStyle  = isClosed ? ' style="background:#f9fafb;opacity:0.75"' : '';
+      const titleStyle = isClosed ? ' style="color:var(--ink-3)"' : '';
       return `
-        <div class="topic-row" onclick="openThread('${t.id}')" role="button" tabindex="0" aria-label="Open topic: ${esc(t.title)}">
+        <div class="topic-row"${rowStyle} onclick="openThread('${t.id}')" role="button" tabindex="0" aria-label="Open topic: ${esc(t.title)}">
           <div class="topic-avatar" aria-hidden="true">${initials}</div>
           <div class="topic-body">
             <div class="topic-title-row">
+              ${renderBadges(t)}
               ${CAT_BADGE[t.category]||''}
               ${t.source === 'teachers_hub' ? '<span class="platform-badge th">Teachers Hub</span>' : t.source === 'academic_hub' ? '<span class="platform-badge ah">Academic Hub</span>' : ''}
-              <span class="topic-title">${esc(t.title||'Untitled')}</span>
+              <span class="topic-title"${titleStyle}>${esc(t.title||'Untitled')}</span>
             </div>
             <p class="topic-meta">${esc(t.author||'Anonymous')} &middot; ${date}</p>
           </div>
