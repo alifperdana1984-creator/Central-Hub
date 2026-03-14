@@ -147,6 +147,15 @@
     .form-divider { border:none; border-top:1px dashed var(--border); margin:14px 0 12px; }
     .form-hint    { font-size:0.76rem; color:var(--ink-3); margin-top:2px; }
 
+    /* FILE UPLOAD */
+    .file-drop-zone { border:2px dashed var(--border); border-radius:8px; padding:14px; background:var(--paper); text-align:center; cursor:pointer; transition:border-color 0.2s; font-size:0.84rem; color:var(--ink-3); }
+    .file-drop-zone:hover { border-color:var(--accent); color:var(--accent); }
+    .attachment-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .attachment-chip { display:flex; align-items:center; gap:5px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:3px 8px; font-size:0.76rem; color:#15803d; }
+    .attachment-chip button { background:none; border:none; cursor:pointer; color:#6b7280; font-size:0.9rem; line-height:1; padding:0 2px; }
+    .attachment-chip button:hover { color:#dc2626; }
+    .upload-progress { font-size:0.78rem; color:var(--ink-3); margin-top:6px; min-height:1.2em; }
+
     /* SKELETON */
     .skel { background: linear-gradient(90deg,var(--paper-2) 25%,var(--paper) 50%,var(--paper-2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; display: block; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -305,6 +314,16 @@
           </select>
           <p class="form-hint">Optional — groups this topic by purpose</p>
         </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Attachments</label>
+          <div class="file-drop-zone" id="fileDropZone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" multiple accept="*/*" style="display:none">
+            📎 Click to add files or drag and drop
+          </div>
+          <div class="attachment-chips" id="attachmentChips"></div>
+          <p class="upload-progress" id="uploadProgress"></p>
+          <p class="form-hint">Max 20 MB per file. .exe, .sh, .bat, .ps1 files are not allowed.</p>
+        </div>
         <div class="form-actions">
           <button class="btn-cancel-form" id="cancelTopicBtn">Cancel</button>
           <button class="btn-post-reply" id="submitTopicBtn">Post Topic</button>
@@ -318,16 +337,22 @@
 <script src="firebase-config.js"></script>
 <script type="module" src="auth-guard.js"></script>
 <script type="module">
-  import { collection, getDocs, addDoc, updateDoc, getDoc,
-           doc as fsDoc, query, orderBy, serverTimestamp, increment }
+  import { collection, getDocs, addDoc, setDoc, updateDoc, getDoc,
+           doc as fsDoc, query, orderBy, serverTimestamp, increment,
+           arrayUnion, arrayRemove }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
   let db;
+  let storage;
   let allTopics    = [];
   let currentCat   = 'all';
   let currentUser  = null;
   let openTopicId  = null;
   let editingTopicId = null;
+  let pendingAttachments  = []; // { file: File, name: string } — not yet uploaded
+  let existingAttachments = []; // { name, url, storagePath, uploadedAt, uploadedBy } — already in Firestore
 
   const CAT_BADGE = {
     general:   '<span class="badge badge-general">General</span>',
@@ -341,6 +366,7 @@
   // ===== Auth ready =====
   document.addEventListener('authReady', async ({ detail: { user } }) => {
     db = window.db;
+    storage = getStorage(window.firebaseApp);
     currentUser = user;
     await loadTopics();
     bindEvents();
@@ -394,6 +420,10 @@
     if (t.deadline) {
       const d = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
       html += `<span class="ws-deadline-badge">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`;
+    }
+    const attCount = (t.attachments || []).length;
+    if (attCount > 0) {
+      html += `<span style="font-size:0.68rem;color:var(--ink-3);margin-left:2px">📎 ${attCount}</span>`;
     }
     return html;
   }
@@ -515,6 +545,9 @@
     }
     document.getElementById('topicFormTitle').textContent = 'Edit Topic';
     document.getElementById('topicError').classList.remove('visible');
+    pendingAttachments  = [];
+    existingAttachments = [...(topic.attachments || [])];
+    renderAttachmentChips();
     showView('newTopic');
   }
   window.openEditForm = openEditForm;
@@ -550,6 +583,48 @@
     }
   }
 
+  // ===== Attachment helpers =====
+  function sanitizeFilename(name) {
+    return name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  }
+
+  const BLOCKED_EXTS = ['.exe', '.sh', '.bat', '.ps1'];
+  const MAX_BYTES    = 20 * 1024 * 1024;
+
+  function renderAttachmentChips() {
+    const el = document.getElementById('attachmentChips');
+    if (!el) return;
+    const pendingHtml  = pendingAttachments.map((a, i) =>
+      `<span class="attachment-chip">📎 ${esc(a.name)}<button type="button" onclick="removePendingAttachment(${i})" title="Remove">×</button></span>`
+    );
+    const existingHtml = existingAttachments.map((a, i) =>
+      `<span class="attachment-chip"><a href="${esc(a.url)}" target="_blank" style="color:inherit;text-decoration:none">📎 ${esc(a.name)}</a><button type="button" onclick="removeExistingAttachment(${i})" title="Remove">×</button></span>`
+    );
+    el.innerHTML = [...existingHtml, ...pendingHtml].join('');
+  }
+
+  function removePendingAttachment(i) {
+    pendingAttachments.splice(i, 1);
+    renderAttachmentChips();
+  }
+
+  async function removeExistingAttachment(i) {
+    const att = existingAttachments[i];
+    if (!editingTopicId) return;
+    if (!confirm(`Remove "${att.name}"?`)) return;
+    try {
+      await deleteObject(storageRef(storage, att.storagePath)).catch(() => {}); // best-effort
+      await updateDoc(fsDoc(db, 'topics', editingTopicId), { attachments: arrayRemove(att) });
+      existingAttachments.splice(i, 1);
+      renderAttachmentChips();
+    } catch(e) {
+      alert('Could not remove attachment: ' + e.message);
+    }
+  }
+
+  window.removePendingAttachment  = removePendingAttachment;
+  window.removeExistingAttachment = removeExistingAttachment;
+
   // ===== New Topic =====
   async function submitTopic() {
     const cat    = document.getElementById('topicCat').value;
@@ -558,6 +633,7 @@
     const status      = document.getElementById('topicStatus').value || 'open';
     const wsCat       = document.getElementById('topicWsCat').value || null;
     const deadlineVal = document.getElementById('topicDeadline').value;
+    const linkedAnnId = document.getElementById('topicLinkedAnn')?.value || null; // Phase 3 field
     const errEl = document.getElementById('topicError');
 
     if (!cat || !title || !body) {
@@ -568,17 +644,36 @@
     errEl.classList.remove('visible');
     const btn = document.getElementById('submitTopicBtn');
     btn.disabled = true;
+    btn.textContent = editingTopicId ? 'Saving…' : 'Posting…';
+
     const topicIdBeingSaved = editingTopicId;
-    btn.textContent = topicIdBeingSaved ? 'Saving…' : 'Posting…';
 
     try {
+      // For new topics, pre-generate the doc ref so Storage paths match the Firestore ID
+      const newDocRef = topicIdBeingSaved ? null : fsDoc(collection(db, 'topics'));
+      const topicIdForPath = topicIdBeingSaved || newDocRef.id;
+
+      // Upload any pending attachments
+      const progressEl = document.getElementById('uploadProgress');
+      const uploadedAtts = [...existingAttachments];
+
+      for (let i = 0; i < pendingAttachments.length; i++) {
+        const { file, name } = pendingAttachments[i];
+        progressEl.textContent = `Uploading ${i + 1}/${pendingAttachments.length}: ${name}…`;
+        const path    = `topics/${topicIdForPath}/attachments/${Date.now()}-${name}`;
+        const fileRef = storageRef(storage, path);
+        const snap    = await uploadBytes(fileRef, file);
+        const url     = await getDownloadURL(snap.ref);
+        uploadedAtts.push({ name, url, storagePath: path, uploadedAt: new Date(), uploadedBy: currentUser.displayName || currentUser.email });
+      }
+      if (progressEl) progressEl.textContent = '';
+
       const payload = {
-        category:          cat,
-        title,
-        body,
-        status,
-        deadline:          deadlineVal ? new Date(deadlineVal) : null,
-        workspaceCategory: wsCat,
+        category:             cat, title, body, status,
+        deadline:             deadlineVal ? new Date(deadlineVal) : null,
+        workspaceCategory:    wsCat,
+        attachments:          uploadedAtts,
+        linkedAnnouncementId: linkedAnnId,
       };
 
       if (topicIdBeingSaved) {
@@ -587,19 +682,19 @@
         openThread(topicIdBeingSaved);
         editingTopicId = null;
       } else {
-        // TODO Phase 2: replace addDoc with doc(collection(...))+setDoc to pre-generate ID for Storage paths
-        const ref = await addDoc(collection(db, 'topics'), {
+        await setDoc(newDocRef, {
           ...payload,
-          author:               currentUser.displayName || currentUser.email,
-          replyCount:           0,
-          createdAt:            serverTimestamp(),
-          source:               'central_hub',
-          attachments:          [],
-          linkedAnnouncementId: null,
+          author:    currentUser.displayName || currentUser.email,
+          replyCount: 0,
+          createdAt: serverTimestamp(),
+          source:    'central_hub',
         });
         await loadTopics();
-        openThread(ref.id);
+        openThread(newDocRef.id);
       }
+      pendingAttachments = [];
+      existingAttachments = [];
+      renderAttachmentChips();
     } catch(e) {
       errEl.textContent = e.message;
       errEl.classList.add('visible');
@@ -629,12 +724,25 @@
       document.getElementById('topicWsCat').value     = '';
       document.getElementById('topicFormTitle').textContent = 'Start a New Topic';
       editingTopicId = null;
+      pendingAttachments  = [];
+      existingAttachments = [];
+      renderAttachmentChips();
       showView('newTopic');
     });
     document.getElementById('backBtn').addEventListener('click', () => showView('list'));
     document.getElementById('cancelTopicBtn').addEventListener('click', () => showView('list'));
     document.getElementById('postReplyBtn').addEventListener('click', postReply);
     document.getElementById('submitTopicBtn').addEventListener('click', submitTopic);
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      Array.from(e.target.files).forEach(file => {
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (BLOCKED_EXTS.includes(ext)) { alert(`File type ${ext} is not allowed.`); return; }
+        if (file.size > MAX_BYTES) { alert(`${file.name} exceeds the 20 MB limit.`); return; }
+        pendingAttachments.push({ file, name: sanitizeFilename(file.name) });
+        renderAttachmentChips();
+      });
+      e.target.value = '';
+    });
   }
 
   function esc(s) {
