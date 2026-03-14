@@ -314,6 +314,15 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label class="form-label" for="fLinkedTopic">Attach to Topic</label>
+        <select class="form-select" id="fLinkedTopic">
+          <option value="">None (save to Documents only)</option>
+          <!-- populated by loadTopicDropdownForDocs() -->
+        </select>
+        <p class="form-hint">Optional — also appends this file to the selected topic's attachments.</p>
+      </div>
+
       <div class="form-row-3">
         <div class="form-group">
           <label class="form-label" for="fVersion">Version <span class="req">*</span></label>
@@ -369,7 +378,7 @@
 <script src="firebase-config.js"></script>
 <script type="module" src="auth-guard.js"></script>
 <script type="module">
-  import { collection, getDocs, addDoc, updateDoc, deleteDoc as fsDeleteDoc, doc as fsDoc, query, orderBy, where, serverTimestamp }
+  import { collection, getDocs, addDoc, updateDoc, deleteDoc as fsDeleteDoc, doc as fsDoc, query, orderBy, where, limit, serverTimestamp, arrayUnion }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
   let db;
@@ -427,7 +436,35 @@
       document.querySelectorAll('.admin-actions').forEach(el => el.style.display = 'flex');
     }
     loadDocuments();
+    loadTopicDropdownForDocs();
   });
+
+  // ── Topic dropdown for "Attach to Topic" ─────────────────
+  async function loadTopicDropdownForDocs() {
+    const sel = document.getElementById('fLinkedTopic');
+    if (!sel) return;
+    // Remove all but first option
+    while (sel.options.length > 1) sel.remove(1);
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, 'topics'),
+          where('status', 'in', ['open', 'in_progress']),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        )
+      );
+      snap.docs.forEach(d => {
+        const t = d.data();
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = t.title || 'Untitled';
+        sel.appendChild(opt);
+      });
+    } catch(e) {
+      console.warn('Could not load topics for dropdown:', e);
+    }
+  }
 
   // ── Load & render ────────────────────────────────────────
   async function loadDocuments() {
@@ -575,6 +612,8 @@
     fVersion.value = '1.0';
     fCategory.value = fType.value = fStatus.value = '';
     fStatus.value = 'active';
+    const fLinkedTopic = document.getElementById('fLinkedTopic');
+    if (fLinkedTopic) fLinkedTopic.value = '';
     docIdPreview.textContent = 'EDU\u2013\u2014\u2013\u2014\u2013\u2014';
     modalError.textContent = '';
     modalError.classList.remove('visible');
@@ -585,6 +624,7 @@
     resetForm();
     // default date to today
     fDate.value = new Date().toISOString().slice(0, 10);
+    loadTopicDropdownForDocs();
     openModal();
   });
 
@@ -720,6 +760,28 @@
           preparedBy, driveLink, schools, description, serial,
           createdAt: serverTimestamp(),
         });
+      }
+
+      // ── Dual-write: attach to topic if selected ──────────
+      const linkedTopicId = document.getElementById('fLinkedTopic').value;
+      if (linkedTopicId) {
+        try {
+          await updateDoc(fsDoc(db, 'topics', linkedTopicId), {
+            attachments: arrayUnion({
+              name:       title,
+              url:        driveLink,
+              docId:      docId,
+              uploadedAt: new Date(),
+              uploadedBy: window.currentUser?.displayName || window.currentUser?.email || '',
+            })
+          });
+        } catch(e) {
+          console.warn('Could not link to topic:', e);
+          showError('Document saved, but could not attach to the selected topic.');
+          modalSave.disabled = false;
+          await loadDocuments();
+          return;
+        }
       }
 
       closeModal();
