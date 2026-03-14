@@ -28,3 +28,4 @@ resources/*
 
 # Brainstorming visual companion
 .superpowers/
+.worktrees/
