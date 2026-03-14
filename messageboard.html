@@ -137,9 +137,37 @@
     .platform-badge.th { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
     .platform-badge.ah { background:#ede9fe; color:#5b21b6; border:1px solid #ddd6fe; }
 
+    /* WORKSPACE STATUS / DEADLINE / CATEGORY BADGES */
+    .ws-badge { display:inline-flex; align-items:center; font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+    .ws-badge-open        { background:#d1fae5; color:#065f46; }
+    .ws-badge-in_progress { background:#fef3c7; color:#92400e; }
+    .ws-badge-closed      { background:#f3f4f6; color:#6b7280; }
+    .ws-cat-badge     { display:inline-flex; align-items:center; font-size:0.68rem; font-weight:600; padding:2px 7px; border-radius:4px; background:#e0f2fe; color:#0369a1; white-space:nowrap; }
+    .ws-deadline-badge{ display:inline-flex; align-items:center; font-size:0.68rem; font-weight:600; padding:2px 7px; border-radius:4px; background:#fee2e2; color:#dc2626; white-space:nowrap; }
+    .form-divider { border:none; border-top:1px dashed var(--border); margin:14px 0 12px; }
+    .form-hint    { font-size:0.76rem; color:var(--ink-3); margin-top:2px; }
+
+    /* FILE UPLOAD */
+    .file-drop-zone { border:2px dashed var(--border); border-radius:8px; padding:14px; background:var(--paper); text-align:center; cursor:pointer; transition:border-color 0.2s; font-size:0.84rem; color:var(--ink-3); }
+    .file-drop-zone:hover { border-color:var(--accent); color:var(--accent); }
+    .attachment-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+    .attachment-chip { display:flex; align-items:center; gap:5px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:4px; padding:3px 8px; font-size:0.76rem; color:#15803d; }
+    .attachment-chip button { background:none; border:none; cursor:pointer; color:#6b7280; font-size:0.9rem; line-height:1; padding:0 2px; }
+    .attachment-chip button:hover { color:#dc2626; }
+    .upload-progress { font-size:0.78rem; color:var(--ink-3); margin-top:6px; min-height:1.2em; }
+
     /* SKELETON */
     .skel { background: linear-gradient(90deg,var(--paper-2) 25%,var(--paper) 50%,var(--paper-2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; display: block; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* LINKED ANNOUNCEMENT CARD */
+    .linked-ann-card { background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:14px 16px; margin-bottom:14px; }
+    .linked-ann-label { font-size:0.68rem; font-weight:700; color:#0369a1; text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; }
+    .linked-ann-title { font-size:0.925rem; font-weight:600; color:var(--ink); margin-bottom:4px; }
+    .linked-ann-excerpt { font-size:0.83rem; color:var(--ink-2); line-height:1.5; margin-bottom:8px; }
+    .linked-ann-meta { font-size:0.76rem; color:var(--ink-3); margin-bottom:8px; }
+    .linked-ann-link { font-size:0.82rem; color:var(--accent); text-decoration:none; font-weight:500; }
+    .linked-ann-link:hover { text-decoration:underline; }
 
     /* RESPONSIVE */
     @media (max-width: 768px) {
@@ -231,6 +259,7 @@
         <p class="thread-category" id="threadCat"></p>
         <h2 class="thread-title" id="threadTitle"></h2>
       </div>
+      <div id="linkedAnnCard"></div>
       <div id="threadPosts"></div>
       <p class="replies-heading" id="repliesHeading"></p>
       <div id="replyList"></div>
@@ -247,7 +276,7 @@
     <!-- NEW TOPIC VIEW -->
     <div class="view" id="viewNewTopic">
       <div class="new-topic-form">
-        <h3>Start a New Topic</h3>
+        <h3 id="topicFormTitle">Start a New Topic</h3>
         <div class="form-error" id="topicError" role="alert"></div>
         <div class="form-group">
           <label class="form-label" for="topicCat">Category *</label>
@@ -268,6 +297,51 @@
           <label class="form-label" for="topicBody">Body *</label>
           <textarea class="form-input form-textarea" id="topicBody" placeholder="Describe your topic in detail…"></textarea>
         </div>
+        <hr class="form-divider">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+          <div class="form-group">
+            <label class="form-label" for="topicStatus">Status</label>
+            <select class="form-select" id="topicStatus">
+              <option value="open">Open</option>
+              <option value="in_progress">In Progress</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="topicDeadline">Deadline</label>
+            <input class="form-input" id="topicDeadline" type="date">
+            <p class="form-hint">Optional</p>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" for="topicWsCat">Workspace Category</label>
+          <select class="form-select" id="topicWsCat">
+            <option value="">None</option>
+            <option value="Akreditasyon">Akreditasyon</option>
+            <option value="Müfredat">Müfredat</option>
+            <option value="Genel">Genel</option>
+            <option value="Personel">Personel</option>
+          </select>
+          <p class="form-hint">Optional — groups this topic by purpose</p>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" for="topicLinkedAnn">İlişkili Duyuru</label>
+          <select class="form-select" id="topicLinkedAnn">
+            <option value="">None</option>
+            <!-- populated by loadAnnouncementDropdown() -->
+          </select>
+          <p class="form-hint">Optional — links this topic to an existing announcement.</p>
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Attachments</label>
+          <div class="file-drop-zone" id="fileDropZone" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" multiple accept="*/*" style="display:none">
+            📎 Click to add files
+          </div>
+          <div class="attachment-chips" id="attachmentChips"></div>
+          <p class="upload-progress" id="uploadProgress"></p>
+          <p class="form-hint">Max 20 MB per file. .exe, .sh, .bat, .ps1 files are not allowed.</p>
+        </div>
         <div class="form-actions">
           <button class="btn-cancel-form" id="cancelTopicBtn">Cancel</button>
           <button class="btn-post-reply" id="submitTopicBtn">Post Topic</button>
@@ -281,15 +355,22 @@
 <script src="firebase-config.js"></script>
 <script type="module" src="auth-guard.js"></script>
 <script type="module">
-  import { collection, getDocs, addDoc, updateDoc, getDoc,
-           doc as fsDoc, query, orderBy, serverTimestamp, increment }
+  import { collection, getDocs, setDoc, updateDoc, getDoc,
+           doc as fsDoc, query, orderBy, serverTimestamp, increment,
+           arrayUnion, arrayRemove }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject }
+    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
   let db;
+  let storage;
   let allTopics    = [];
   let currentCat   = 'all';
   let currentUser  = null;
   let openTopicId  = null;
+  let editingTopicId = null;
+  let pendingAttachments  = []; // { file: File, name: string } — not yet uploaded
+  let existingAttachments = []; // { name, url, storagePath, uploadedAt, uploadedBy } — already in Firestore
 
   const CAT_BADGE = {
     general:   '<span class="badge badge-general">General</span>',
@@ -300,12 +381,38 @@
   };
   const CAT_LABEL = { all:'All Topics', general:'General', academic:'Academic', resources:'Resources', events:'Events', technical:'Technical' };
 
+  // ===== Announcement dropdown =====
+  async function loadAnnouncementDropdown() {
+    const sel = document.getElementById('topicLinkedAnn');
+    if (!sel) return;
+    while (sel.options.length > 1) sel.remove(1);
+    try {
+      const snap = await getDocs(
+        query(collection(db, 'announcements'), orderBy('createdAt', 'desc'), limit(50))
+      );
+      snap.docs.forEach(d => {
+        const a = d.data();
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        const dateStr = a.createdAt?.toDate
+          ? a.createdAt.toDate().toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'})
+          : '';
+        opt.textContent = `${a.title || 'Untitled'} (${dateStr})`;
+        sel.appendChild(opt);
+      });
+    } catch(e) {
+      console.warn('Could not load announcements:', e);
+    }
+  }
+
   // ===== Auth ready =====
   document.addEventListener('authReady', async ({ detail: { user } }) => {
     db = window.db;
+    storage = getStorage(window.firebaseApp);
     currentUser = user;
     await loadTopics();
     bindEvents();
+    await loadAnnouncementDropdown();
   });
 
   // ===== Load all topics =====
@@ -340,6 +447,30 @@
     showView('list');
   }
 
+  // ===== Render badges =====
+  function renderBadges(t) {
+    let html = '';
+    const statusMap = {
+      open:        { cls: 'ws-badge-open',        label: 'OPEN' },
+      in_progress: { cls: 'ws-badge-in_progress', label: 'IN PROGRESS' },
+      closed:      { cls: 'ws-badge-closed',       label: 'CLOSED' },
+    };
+    const s = statusMap[t.status];
+    if (s) html += `<span class="ws-badge ${s.cls}">${s.label}</span>`;
+    if (t.workspaceCategory) {
+      html += `<span class="ws-cat-badge">${esc(t.workspaceCategory)}</span>`;
+    }
+    if (t.deadline) {
+      const d = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
+      html += `<span class="ws-deadline-badge">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`;
+    }
+    const attCount = (t.attachments || []).length;
+    if (attCount > 0) {
+      html += `<span style="font-size:0.68rem;color:var(--ink-3);margin-left:2px">📎 ${attCount}</span>`;
+    }
+    return html;
+  }
+
   // ===== Render topics =====
   function renderTopics() {
     const q    = document.getElementById('searchInput').value.toLowerCase();
@@ -358,14 +489,18 @@
     el.innerHTML = list.map(t => {
       const initials = (t.author||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       const date = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      const isClosed  = t.status === 'closed';
+      const rowStyle  = isClosed ? ' style="background:#f9fafb;opacity:0.75"' : '';
+      const titleStyle = isClosed ? ' style="color:var(--ink-3)"' : '';
       return `
-        <div class="topic-row" onclick="openThread('${t.id}')" role="button" tabindex="0" aria-label="Open topic: ${esc(t.title)}">
+        <div class="topic-row"${rowStyle} onclick="openThread('${t.id}')" role="button" tabindex="0" aria-label="Open topic: ${esc(t.title)}">
           <div class="topic-avatar" aria-hidden="true">${initials}</div>
           <div class="topic-body">
             <div class="topic-title-row">
+              ${renderBadges(t)}
               ${CAT_BADGE[t.category]||''}
               ${t.source === 'teachers_hub' ? '<span class="platform-badge th">Teachers Hub</span>' : t.source === 'academic_hub' ? '<span class="platform-badge ah">Academic Hub</span>' : ''}
-              <span class="topic-title">${esc(t.title||'Untitled')}</span>
+              <span class="topic-title"${titleStyle}>${esc(t.title||'Untitled')}</span>
             </div>
             <p class="topic-meta">${esc(t.author||'Anonymous')} &middot; ${date}</p>
           </div>
@@ -388,6 +523,16 @@
     showView('thread');
     document.getElementById('threadCat').innerHTML  = CAT_BADGE[topic.category] || '';
     document.getElementById('threadTitle').textContent = topic.title || 'Untitled';
+    let editBtn = document.getElementById('editTopicBtn');
+    if (!editBtn) {
+      editBtn = document.createElement('button');
+      editBtn.id        = 'editTopicBtn';
+      editBtn.className = 'btn-cancel-form';
+      editBtn.style.cssText = 'margin-bottom:14px;font-size:0.82rem;';
+      editBtn.textContent   = '✎ Edit Topic';
+      document.getElementById('backBtn').insertAdjacentElement('afterend', editBtn);
+    }
+    editBtn.onclick = () => openEditForm(topic);
     document.getElementById('replyText').value = '';
     document.getElementById('replyError').classList.remove('visible');
 
@@ -404,6 +549,37 @@
         </div>
         <p class="post-body">${esc(topic.body||'')}</p>
       </div>`;
+
+    // Linked announcement card
+    const linkedAnnEl = document.getElementById('linkedAnnCard');
+    if (topic.linkedAnnouncementId) {
+      try {
+        const annSnap = await getDoc(fsDoc(db, 'announcements', topic.linkedAnnouncementId));
+        if (annSnap.exists()) {
+          const ann = annSnap.data();
+          const annDate = ann.createdAt?.toDate
+            ? ann.createdAt.toDate().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'})
+            : '';
+          // Check both 'body' and 'content' field names — announcements.html uses whichever exists
+          const fullText = ann.body || ann.content || '';
+          const excerpt  = fullText.slice(0, 120);
+          linkedAnnEl.innerHTML = `
+            <div class="linked-ann-card">
+              <p class="linked-ann-label">📣 İlişkili Duyuru</p>
+              <p class="linked-ann-title">${esc(ann.title || 'Untitled')}</p>
+              <p class="linked-ann-excerpt">${esc(excerpt)}${fullText.length > 120 ? '…' : ''}</p>
+              <p class="linked-ann-meta">${annDate}</p>
+              <a href="announcements" class="linked-ann-link">Duyuruya Git →</a>
+            </div>`;
+        } else {
+          linkedAnnEl.innerHTML = '';
+        }
+      } catch(e) {
+        linkedAnnEl.innerHTML = '';
+      }
+    } else {
+      linkedAnnEl.innerHTML = '';
+    }
 
     // Load replies
     try {
@@ -426,6 +602,30 @@
       document.getElementById('replyList').innerHTML = '<p style="color:var(--ink-3);font-size:.85rem">Could not load replies.</p>';
     }
   }
+
+  // ===== Edit Topic form =====
+  function openEditForm(topic) {
+    editingTopicId = topic.id;
+    document.getElementById('topicCat').value    = topic.category || '';
+    document.getElementById('topicTitle').value  = topic.title || '';
+    document.getElementById('topicBody').value   = topic.body || '';
+    document.getElementById('topicStatus').value = topic.status || 'open';
+    document.getElementById('topicWsCat').value  = topic.workspaceCategory || '';
+    document.getElementById('topicLinkedAnn').value = topic.linkedAnnouncementId || '';
+    if (topic.deadline) {
+      const d = topic.deadline.toDate ? topic.deadline.toDate() : new Date(topic.deadline);
+      document.getElementById('topicDeadline').value = d.toISOString().split('T')[0];
+    } else {
+      document.getElementById('topicDeadline').value = '';
+    }
+    document.getElementById('topicFormTitle').textContent = 'Edit Topic';
+    document.getElementById('topicError').classList.remove('visible');
+    pendingAttachments  = [];
+    existingAttachments = [...(topic.attachments || [])];
+    renderAttachmentChips();
+    showView('newTopic');
+  }
+  window.openEditForm = openEditForm;
 
   // ===== Post reply =====
   async function postReply() {
@@ -458,30 +658,126 @@
     }
   }
 
+  // ===== Attachment helpers =====
+  function sanitizeFilename(name) {
+    return name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  }
+
+  const BLOCKED_EXTS = ['.exe', '.sh', '.bat', '.ps1'];
+  const MAX_BYTES    = 20 * 1024 * 1024;
+
+  function renderAttachmentChips() {
+    const el = document.getElementById('attachmentChips');
+    if (!el) return;
+    const pendingHtml  = pendingAttachments.map((a, i) =>
+      `<span class="attachment-chip">📎 ${esc(a.name)}<button type="button" onclick="removePendingAttachment(${i})" title="Remove">×</button></span>`
+    );
+    const existingHtml = existingAttachments.map((a, i) =>
+      `<span class="attachment-chip"><a href="${esc(a.url)}" target="_blank" style="color:inherit;text-decoration:none">📎 ${esc(a.name)}</a><button type="button" onclick="removeExistingAttachment(${i})" title="Remove">×</button></span>`
+    );
+    el.innerHTML = [...existingHtml, ...pendingHtml].join('');
+  }
+
+  function removePendingAttachment(i) {
+    pendingAttachments.splice(i, 1);
+    renderAttachmentChips();
+  }
+
+  async function removeExistingAttachment(i) {
+    const att = existingAttachments[i];
+    if (!editingTopicId) return;
+    if (!confirm(`Remove "${att.name}"?`)) return;
+    try {
+      await deleteObject(storageRef(storage, att.storagePath)).catch(() => {}); // best-effort
+      await updateDoc(fsDoc(db, 'topics', editingTopicId), { attachments: arrayRemove(att) });
+      existingAttachments.splice(i, 1);
+      renderAttachmentChips();
+    } catch(e) {
+      alert('Could not remove attachment: ' + e.message);
+    }
+  }
+
+  window.removePendingAttachment  = removePendingAttachment;
+  window.removeExistingAttachment = removeExistingAttachment;
+
   // ===== New Topic =====
   async function submitTopic() {
-    const cat   = document.getElementById('topicCat').value;
-    const title = document.getElementById('topicTitle').value.trim();
-    const body  = document.getElementById('topicBody').value.trim();
+    const cat    = document.getElementById('topicCat').value;
+    const title  = document.getElementById('topicTitle').value.trim();
+    const body   = document.getElementById('topicBody').value.trim();
+    const status      = document.getElementById('topicStatus').value || 'open';
+    const wsCat       = document.getElementById('topicWsCat').value || null;
+    const deadlineVal = document.getElementById('topicDeadline').value;
+    const linkedAnnId = document.getElementById('topicLinkedAnn')?.value || null; // Phase 3 field
     const errEl = document.getElementById('topicError');
-    if (!cat || !title || !body) { errEl.textContent = 'All fields are required.'; errEl.classList.add('visible'); return; }
+
+    if (!cat || !title || !body) {
+      errEl.textContent = 'Category, title, and body are required.';
+      errEl.classList.add('visible');
+      return;
+    }
     errEl.classList.remove('visible');
     const btn = document.getElementById('submitTopicBtn');
-    btn.disabled = true; btn.textContent = 'Posting…';
+    btn.disabled = true;
+    btn.textContent = editingTopicId ? 'Saving…' : 'Posting…';
+
+    const topicIdBeingSaved = editingTopicId;
+
     try {
-      const ref = await addDoc(collection(db, 'topics'), {
-        category: cat, title, body,
-        author:     currentUser.displayName || currentUser.email,
-        replyCount: 0,
-        createdAt:  serverTimestamp(),
-        source:     'central_hub',
-      });
-      await loadTopics();
-      openThread(ref.id);
+      // For new topics, pre-generate the doc ref so Storage paths match the Firestore ID
+      const newDocRef = topicIdBeingSaved ? null : fsDoc(collection(db, 'topics'));
+      const topicIdForPath = topicIdBeingSaved || newDocRef.id;
+
+      // Upload any pending attachments
+      const progressEl = document.getElementById('uploadProgress');
+      const uploadedAtts = [...existingAttachments];
+
+      // Note: if upload fails mid-way, files already uploaded are orphaned in Storage.
+      // On error, the user should remove and re-add all files before retrying.
+      for (let i = 0; i < pendingAttachments.length; i++) {
+        const { file, name } = pendingAttachments[i];
+        progressEl.textContent = `Uploading ${i + 1}/${pendingAttachments.length}: ${name}…`;
+        const path    = `topics/${topicIdForPath}/attachments/${Date.now()}-${name}`;
+        const fileRef = storageRef(storage, path);
+        const snap    = await uploadBytes(fileRef, file);
+        const url     = await getDownloadURL(snap.ref);
+        uploadedAtts.push({ name, url, storagePath: path, uploadedAt: new Date(), uploadedBy: currentUser.displayName || currentUser.email });
+      }
+      if (progressEl) progressEl.textContent = '';
+
+      const payload = {
+        category:             cat, title, body, status,
+        deadline:             deadlineVal ? new Date(deadlineVal) : null,
+        workspaceCategory:    wsCat,
+        attachments:          uploadedAtts,
+        linkedAnnouncementId: linkedAnnId,
+      };
+
+      if (topicIdBeingSaved) {
+        await updateDoc(fsDoc(db, 'topics', topicIdBeingSaved), payload);
+        await loadTopics();
+        openThread(topicIdBeingSaved);
+        editingTopicId = null;
+      } else {
+        await setDoc(newDocRef, {
+          ...payload,
+          author:    currentUser.displayName || currentUser.email,
+          replyCount: 0,
+          createdAt: serverTimestamp(),
+          source:    'central_hub',
+        });
+        await loadTopics();
+        openThread(newDocRef.id);
+      }
+      pendingAttachments = [];
+      existingAttachments = [];
+      renderAttachmentChips();
     } catch(e) {
-      errEl.textContent = e.message; errEl.classList.add('visible');
+      errEl.textContent = e.message;
+      errEl.classList.add('visible');
     } finally {
-      btn.disabled = false; btn.textContent = 'Post Topic';
+      btn.disabled = false;
+      btn.textContent = topicIdBeingSaved ? 'Save Changes' : 'Post Topic';
     }
   }
 
@@ -500,12 +796,31 @@
       document.getElementById('topicTitle').value = '';
       document.getElementById('topicBody').value  = '';
       document.getElementById('topicError').classList.remove('visible');
+      document.getElementById('topicStatus').value   = 'open';
+      document.getElementById('topicDeadline').value  = '';
+      document.getElementById('topicWsCat').value     = '';
+      document.getElementById('topicLinkedAnn').value  = '';
+      document.getElementById('topicFormTitle').textContent = 'Start a New Topic';
+      editingTopicId = null;
+      pendingAttachments  = [];
+      existingAttachments = [];
+      renderAttachmentChips();
       showView('newTopic');
     });
     document.getElementById('backBtn').addEventListener('click', () => showView('list'));
     document.getElementById('cancelTopicBtn').addEventListener('click', () => showView('list'));
     document.getElementById('postReplyBtn').addEventListener('click', postReply);
     document.getElementById('submitTopicBtn').addEventListener('click', submitTopic);
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      Array.from(e.target.files).forEach(file => {
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (BLOCKED_EXTS.includes(ext)) { alert(`File type ${ext} is not allowed.`); return; }
+        if (file.size > MAX_BYTES) { alert(`${file.name} exceeds the 20 MB limit.`); return; }
+        pendingAttachments.push({ file, name: sanitizeFilename(file.name) });
+        renderAttachmentChips();
+      });
+      e.target.value = '';
+    });
   }
 
   function esc(s) {
