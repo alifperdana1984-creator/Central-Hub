@@ -514,7 +514,8 @@
     errEl.classList.remove('visible');
     const btn = document.getElementById('submitTopicBtn');
     btn.disabled = true;
-    btn.textContent = editingTopicId ? 'Saving…' : 'Posting…';
+    const topicIdBeingSaved = editingTopicId;
+    btn.textContent = topicIdBeingSaved ? 'Saving…' : 'Posting…';
 
     try {
       const payload = {
@@ -526,10 +527,10 @@
         workspaceCategory: wsCat,
       };
 
-      if (editingTopicId) {
-        await updateDoc(fsDoc(db, 'topics', editingTopicId), payload);
+      if (topicIdBeingSaved) {
+        await updateDoc(fsDoc(db, 'topics', topicIdBeingSaved), payload);
         await loadTopics();
-        openThread(editingTopicId);
+        openThread(topicIdBeingSaved);
         editingTopicId = null;
       } else {
         // TODO Phase 2: replace addDoc with doc(collection(...))+setDoc to pre-generate ID for Storage paths
@@ -550,7 +551,7 @@
       errEl.classList.add('visible');
     } finally {
       btn.disabled = false;
-      btn.textContent = editingTopicId ? 'Save Changes' : 'Post Topic';
+      btn.textContent = topicIdBeingSaved ? 'Save Changes' : 'Post Topic';
     }
   }
 
