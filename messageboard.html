@@ -160,6 +160,15 @@
     .skel { background: linear-gradient(90deg,var(--paper-2) 25%,var(--paper) 50%,var(--paper-2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; display: block; }
     @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
+    /* LINKED ANNOUNCEMENT CARD */
+    .linked-ann-card { background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:14px 16px; margin-bottom:14px; }
+    .linked-ann-label { font-size:0.68rem; font-weight:700; color:#0369a1; text-transform:uppercase; letter-spacing:.07em; margin-bottom:6px; }
+    .linked-ann-title { font-size:0.925rem; font-weight:600; color:var(--ink); margin-bottom:4px; }
+    .linked-ann-excerpt { font-size:0.83rem; color:var(--ink-2); line-height:1.5; margin-bottom:8px; }
+    .linked-ann-meta { font-size:0.76rem; color:var(--ink-3); margin-bottom:8px; }
+    .linked-ann-link { font-size:0.82rem; color:var(--accent); text-decoration:none; font-weight:500; }
+    .linked-ann-link:hover { text-decoration:underline; }
+
     /* RESPONSIVE */
     @media (max-width: 768px) {
       .page-layout { grid-template-columns: 1fr; }
@@ -250,6 +259,7 @@
         <p class="thread-category" id="threadCat"></p>
         <h2 class="thread-title" id="threadTitle"></h2>
       </div>
+      <div id="linkedAnnCard"></div>
       <div id="threadPosts"></div>
       <p class="replies-heading" id="repliesHeading"></p>
       <div id="replyList"></div>
@@ -539,6 +549,37 @@
         </div>
         <p class="post-body">${esc(topic.body||'')}</p>
       </div>`;
+
+    // Linked announcement card
+    const linkedAnnEl = document.getElementById('linkedAnnCard');
+    if (topic.linkedAnnouncementId) {
+      try {
+        const annSnap = await getDoc(fsDoc(db, 'announcements', topic.linkedAnnouncementId));
+        if (annSnap.exists()) {
+          const ann = annSnap.data();
+          const annDate = ann.createdAt?.toDate
+            ? ann.createdAt.toDate().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'})
+            : '';
+          // Check both 'body' and 'content' field names — announcements.html uses whichever exists
+          const fullText = ann.body || ann.content || '';
+          const excerpt  = fullText.slice(0, 120);
+          linkedAnnEl.innerHTML = `
+            <div class="linked-ann-card">
+              <p class="linked-ann-label">📣 İlişkili Duyuru</p>
+              <p class="linked-ann-title">${esc(ann.title || 'Untitled')}</p>
+              <p class="linked-ann-excerpt">${esc(excerpt)}${fullText.length > 120 ? '…' : ''}</p>
+              <p class="linked-ann-meta">${annDate}</p>
+              <a href="announcements" class="linked-ann-link">Duyuruya Git →</a>
+            </div>`;
+        } else {
+          linkedAnnEl.innerHTML = '';
+        }
+      } catch(e) {
+        linkedAnnEl.innerHTML = '';
+      }
+    } else {
+      linkedAnnEl.innerHTML = '';
+    }
 
     // Load replies
     try {
