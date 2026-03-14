@@ -394,7 +394,36 @@ service cloud.firestore {
       }
     }
 
-    // â”€â”€ topics (message board) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── partner_schools (School Performance KPI) ─────────────────
+    match /partner_schools/{schoolId} {
+      allow read:  if isAcademicUser();
+      allow write: if isAHAdmin();
+    }
+
+    // ── kpi_config (School Performance KPI — criteria definitions) ─
+    match /kpi_config/{kpiId} {
+      allow read:  if isAcademicUser();
+      allow write: if isAHAdmin();
+    }
+
+    // ── kpi_settings (School Performance KPI — semester settings) ──
+    match /kpi_settings/{semId} {
+      allow read:  if isAcademicUser();
+      allow write: if isAHAdmin();
+    }
+
+    // ── school_performance_kpi (KPI data submissions) ──────────────
+    // Structure: school_performance_kpi/{semId}/schools/{schoolId}
+    match /school_performance_kpi/{semId}/schools/{schoolId} {
+      // Academic users can read their own school's data; admins read all
+      allow read: if isAHAdmin()
+                  || (isAcademicUser()
+                      && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId == schoolId);
+      // Any academic user can write (deadline enforced client-side)
+      allow write: if isAcademicUser();
+    }
+
+    // ── topics (message board) ─────────────────────────────────────
     match /topics/{topicId} {
       allow read:   if isAuthorized();
       allow create: if isAuthorized();
