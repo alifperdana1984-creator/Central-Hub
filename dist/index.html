@@ -2860,16 +2860,6 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
             </div>
           </div>
 
-          <!-- Active Topics -->
-          <div class="active-topics-panel" role="region" aria-label="Active topics">
-            <div class="active-topics-head">
-              <h3>Active Topics</h3>
-              <a href="messageboard">View all →</a>
-            </div>
-            <div id="activeTopicsList">
-              <div class="at-empty">Loading…</div>
-            </div>
-          </div>
         </div>
       </div>
       <!-- /dash-grid -->
@@ -3073,6 +3063,27 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
                     margin-left: auto;
                   "
                 ></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Topics -->
+      <div class="boards-section" role="region" aria-label="Active topics">
+        <div class="boards-header">
+          <h2 class="section-label" style="margin-bottom: 0">Active Topics</h2>
+          <a href="messageboard" class="boards-link">Message Board →</a>
+        </div>
+        <div class="boards-grid" id="activeTopicsGrid">
+          <div class="board-card" style="pointer-events: none">
+            <div class="board-card-top" style="background: var(--paper-2)"></div>
+            <div class="board-card-body">
+              <p class="board-card-name">
+                <span class="skel" style="width: 130px; height: 14px"></span>
+              </p>
+              <div class="board-card-meta">
+                <span class="skel" style="width: 80px; height: 12px"></span>
               </div>
             </div>
           </div>
@@ -4487,47 +4498,65 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       }
 
       async function loadActiveTopics() {
-        const el = document.getElementById('activeTopicsList');
-        if (!el) return;
+        const grid = document.getElementById('activeTopicsGrid');
+        if (!grid) return;
         try {
-          // Phase 1: client-side filter (no composite index needed yet)
           const snap = await getDocs(
             query(collection(db, 'topics'), orderBy('createdAt', 'desc'), limit(20))
           );
           const topics = snap.docs
             .map(d => ({ id: d.id, ...d.data() }))
-            .filter(t => t.status === 'open' || t.status === 'in_progress')
-            .slice(0, 5);
+            .filter(t => !t.status || t.status === 'open' || t.status === 'in_progress')
+            .slice(0, 6);
 
           if (!topics.length) {
-            el.innerHTML = '<div class="at-empty">No active topics.</div>';
+            grid.innerHTML = '<p class="boards-empty">No active topics. <a href="messageboard" style="color:var(--accent)">Go to Message Board</a> to create one.</p>';
             return;
           }
 
+          const statusColor = { open: '#059669', in_progress: '#d97706' };
           const statusLabel = { open: 'OPEN', in_progress: 'IN PROGRESS' };
-          const statusCls   = { open: 'at-status-open', in_progress: 'at-status-in_progress' };
 
-          el.innerHTML = topics.map(t => {
-            let badges = '';
-            if (t.status && statusLabel[t.status]) {
-              badges += `<span class="at-ws-badge ${statusCls[t.status]}">${statusLabel[t.status]}</span>`;
-            }
-            if (t.workspaceCategory) {
-              badges += `<span class="at-cat">${esc(t.workspaceCategory)}</span>`;
-            }
+          grid.innerHTML = topics.map(t => {
+            const color = statusColor[t.status] || '#6b7280';
+            const label = statusLabel[t.status] || '';
+            const attCount = (t.attachments || []).length;
+
+            let meta = [];
+            if (label) meta.push(`<span style="background:${color}22;color:${color};font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:3px;">${label}</span>`);
+            if (t.workspaceCategory) meta.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:0.68rem;font-weight:600;padding:1px 6px;border-radius:3px;">${esc(t.workspaceCategory)}</span>`);
             if (t.deadline) {
               const d = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
-              badges += `<span class="at-deadline">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`;
+              meta.push(`<span style="background:#fee2e2;color:#dc2626;font-size:0.68rem;font-weight:600;padding:1px 6px;border-radius:3px;">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`);
             }
-            return `<a href="messageboard" class="at-item">
-              <div class="at-badges">${badges}</div>
-              <span class="at-title">${esc(t.title || 'Untitled')}</span>
-              <span class="at-meta">${t.replyCount || 0} replies</span>
+
+            const taskItems = [];
+            if (t.body) taskItems.push(`<li class="board-task-item">${esc(t.body.slice(0, 80))}${t.body.length > 80 ? '…' : ''}</li>`);
+            const taskHtml = taskItems.length ? `<ul class="board-task-list">${taskItems.join('')}</ul>` : '';
+
+            const metaLine = [];
+            metaLine.push(`${t.replyCount || 0} replies`);
+            if (attCount > 0) metaLine.push(`📎 ${attCount}`);
+
+            return `
+            <a href="messageboard" class="board-card">
+              <div class="board-card-top" style="background:${color}"></div>
+              <div class="board-card-body">
+                <p class="board-card-name">
+                  <span class="board-card-dot" style="background:${color}"></span>
+                  <span class="board-card-name-text">${esc(t.title || 'Untitled')}</span>
+                </p>
+                ${meta.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">${meta.join('')}</div>` : ''}
+                ${taskHtml}
+                <div class="board-card-meta">
+                  <span class="board-tasks-label">${metaLine.join(' · ')}</span>
+                </div>
+              </div>
             </a>`;
           }).join('');
         } catch(err) {
           console.error('loadActiveTopics error:', err);
-          el.innerHTML = '<div class="at-empty">Could not load topics.</div>';
+          grid.innerHTML = '<p class="boards-empty">Could not load topics.</p>';
         }
       }
 
