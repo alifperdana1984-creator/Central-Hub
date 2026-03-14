@@ -22,7 +22,7 @@ Transform messageboard topics into lightweight contextual workspaces. Each topic
 
 Four pages are affected:
 
-- `messageboard.html` — topic creation form + topic list view
+- `messageboard.html` — topic creation form + topic list view + topic detail view
 - `index.html` — Active Boards dashboard widget
 - `documents.html` — document upload form
 - `announcements.html` — announcement creation form
@@ -33,100 +33,159 @@ No new pages are added. No new Firestore collections are created. All changes ar
 
 ## Data Model
 
-New fields added to `topics/{topicId}` in Firestore:
+### `topics/{topicId}` — new fields
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
-| `status` | `'open' \| 'in_progress' \| 'closed'` | `'open'` | Required on creation |
+| `status` | `'open' \| 'in_progress' \| 'closed'` | `'open'` (pre-selected, user may change) | UI pre-selects `'open'`; user can change before submitting |
 | `deadline` | `timestamp \| null` | `null` | Optional |
 | `category` | `string \| null` | `null` | Free text, e.g. "Akreditasyon", "Müfredat" |
-| `attachments` | `Array<{name, url, uploadedAt, uploadedBy}>` | `[]` | Files attached directly to the topic |
+| `attachments` | `Array<{name, url, storagePath, uploadedAt, uploadedBy}>` | `[]` | Files attached directly to the topic |
 | `linkedAnnouncementId` | `string \| null` | `null` | Reference to `announcements/{id}` |
 
-Existing topics without these fields remain valid. All new fields are treated as nullable. Firestore rules do not change — topic writes are already restricted to `central_admin`.
+### `announcements/{annId}` — new field
+
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `linkedTopicId` | `string \| null` | `null` | Reference to `topics/{id}`; enables bidirectional lookup |
+
+Existing documents without these fields remain valid. All new fields are nullable. Firestore rules do not change — topic writes are already restricted to `central_admin`.
 
 ---
 
 ## UI Changes
 
-### 1. `messageboard.html` — Topic Creation / Edit Form
+### 1. `messageboard.html` — Topic Creation Form
 
 Add below the existing message body field (separated by a dashed divider):
 
-- **Kategori** — free-text input (or predefined dropdown: Akreditasyon, Müfredat, Genel, Personel)
-- **Deadline** — date picker, optional
-- **İlişkili Duyuru** — dropdown populated from `announcements` collection, optional (Phase 3)
-- **Ekler** — drag-and-drop file upload area, optional (Phase 2)
+- **Kategori** — predefined dropdown: Akreditasyon, Müfredat, Genel, Personel (plus free-text option). Optional.
+- **Deadline** — date picker. Optional.
+- **Status** — dropdown with three options: Open, In Progress, Closed. Pre-selected to `'open'`. User may change before submitting.
+- **İlişkili Duyuru** — dropdown (Phase 3 only — not rendered in Phase 1 or 2)
+- **Ekler** — drag-and-drop file upload area (Phase 2 only — not rendered in Phase 1)
 
-### 2. `messageboard.html` — Topic List View
+### 2. `messageboard.html` — Topic Edit Form
 
-Each topic card in the list shows:
+The current messageboard has no edit form. An edit form must be built as part of Phase 1. It renders the same fields as the creation form, pre-filled with the current topic values. Only `central_admin` can edit. Replies are not affected.
+
+### 3. `messageboard.html` — Topic List View
+
+Each topic card shows:
 
 - Status badge: `OPEN` (green) / `IN PROGRESS` (amber) / `CLOSED` (grey)
 - Category badge: teal pill (if set)
-- Deadline badge: red pill with ⏰ icon (if set and upcoming)
-- Attachment count: `📎 N` suffix on the meta line (if > 0)
+- Deadline badge: red pill with ⏰ icon (if set)
+- Attachment count: `📎 N` suffix on the meta line (Phase 2 — rendered only after attachments feature is live; field absent or zero hides the badge)
 
-Closed topics render with muted background (`#f9fafb`) and muted text color.
+Closed topics render with muted background (`#f9fafb`) and muted text.
 
-### 3. `index.html` — Active Boards Widget
+### 4. `index.html` — Active Boards Widget
 
-The existing "Active Boards" panel on the dashboard currently shows topic title + reply count. Updated to also show:
+Updated to show per-topic:
 
-- Status badge (small, 9px)
-- Category badge (small, if set)
+- Status badge (9px)
+- Category badge (if set)
 - Deadline badge (red, if set)
-- Attachment count suffix (`📎 N`)
+- Attachment count suffix `📎 N` (Phase 2)
 
-Only `open` and `in_progress` topics appear in the dashboard widget. Closed topics are excluded.
+Only `open` and `in_progress` topics appear. Closed topics are excluded. Query: `where('status', 'in', ['open', 'in_progress'])`, ordered by `createdAt` descending, limit 5.
 
-### 4. `documents.html` — Upload Form
+### 5. `documents.html` — Upload Form
 
-Add one new optional field after the existing category dropdown:
+Add one optional field after the existing category dropdown:
 
-- **Topic'e Ekle** — dropdown populated from open/in-progress topics. Selecting a topic appends the document to that topic's `attachments[]` array in addition to saving it to `central_documents`.
+- **Topic'e Ekle** — dropdown populated from open/in-progress topics (ordered by `createdAt` descending, limit 50). Selecting a topic triggers the dual-write described in the Phase 2 write strategy below.
 
-### 5. `announcements.html` — Creation Form
+### 6. `announcements.html` — Creation Form
 
-Add one new optional field at the bottom of the form:
+Add one optional field at the bottom of the form:
 
-- **İlişkili Konu** — dropdown populated from open/in-progress topics. Selecting a topic sets `linkedAnnouncementId` on the topic document.
+- **İlişkili Konu** — dropdown populated from open/in-progress topics (ordered by `createdAt` descending, limit 50, showing title + creation date).
 
-A preview note below the field reads: *"Bu duyuru seçilen topic sayfasında İlişkili Duyuru olarak görünecek."*
+A note below the field: *"Bu duyuru seçilen topic sayfasında İlişkili Duyuru olarak görünecek."*
+
+Write sequence on save:
+1. Save the announcement document → get back `announcementId`
+2. If a topic was selected: `updateDoc(topicRef, { linkedAnnouncementId: announcementId })`
+3. Also write `linkedTopicId: topicId` onto the announcement document via a second `updateDoc`
+
+If step 2 or 3 fails after the announcement is saved, show an error toast: *"Duyuru kaydedildi fakat topic bağlantısı kurulamadı."* The announcement itself is not rolled back.
+
+---
+
+## Write Strategies for Dual-Collection Operations
+
+### Phase 2 — Document attached to topic from `documents.html`
+
+When the user selects a topic and saves the document:
+
+1. Upload file to Firebase Storage at `topics/{topicId}/attachments/{timestamp}-{sanitizedFilename}` (timestamp prefix prevents collision)
+2. Save the document to `central_documents` collection
+3. Use `updateDoc` with `arrayUnion` to append the attachment entry to `topics/{topicId}.attachments[]`
+
+Steps 2 and 3 are not wrapped in a transaction (cross-collection transactions are possible but add complexity). Strategy: best-effort — if step 3 fails, show error toast *"Belge kaydedildi fakat topic'e eklenemedi."* The central_documents entry is not rolled back. The user can retry linking manually from the messageboard edit form.
+
+### Phase 3 — Announcement linked to topic from `announcements.html`
+
+Write sequence defined above in section 6. Same best-effort strategy on partial failure.
+
+---
+
+## Storage Path Convention
+
+All topic attachments use the path: `topics/{topicId}/attachments/{Date.now()}-{sanitizedFilename}`
+
+`sanitizedFilename` is computed as: `filename.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '')`. This prevents URL encoding issues and filename collisions.
+
+**File constraints (client-side validation):** max 20 MB per file; executable extensions (`.exe`, `.sh`, `.bat`, `.ps1`) are rejected with an error message before upload begins.
+
+## Attachment Deletion
+
+When a user removes an attachment from the topic edit form:
+
+1. Call `deleteObject` on the Firebase Storage reference (`storagePath` field from the attachment entry)
+2. Call `updateDoc` with `arrayRemove` to remove the entry from `topics/{topicId}.attachments[]`
+
+Best-effort: if Storage delete succeeds but Firestore update fails (or vice versa), show error toast. Orphaned Storage files at this scale are acceptable; no background cleanup job is needed.
+
+## Firestore Index Requirement
+
+The query used in Active Boards widget, documents.html, and announcements.html dropdowns — `where('status', 'in', ['open', 'in_progress']), orderBy('createdAt', 'desc')` — requires a composite index on the `topics` collection: `(status ASC, createdAt DESC)`. This index must be created in the Firebase Console (or `firestore.indexes.json`) before Phase 2 goes live. Phase 1 does not use this query on the dashboard (it can use a simpler `orderBy('createdAt', 'desc')` and filter client-side since topics are few).
 
 ---
 
 ## Implementation Phases
 
-### Phase 1 — Status, Deadline, Category (no file uploads, no announcement linking)
+### Phase 1 — Status, Deadline, Category + Edit Form
 
-Files changed: `messageboard.html`, `index.html`
+**Files changed:** `messageboard.html`, `index.html`
 
-- Add `status` dropdown (required, default `'open'`) to topic creation form
-- Add `deadline` date picker (optional) to topic creation form
-- Add `category` text/dropdown (optional) to topic creation form
-- Render status + deadline + category badges in topic list
-- Update `index.html` Active Boards widget to show badges; filter out closed topics
+- Add `status` (pre-selected dropdown), `deadline` (date picker), `category` (dropdown) to topic creation form
+- Build topic edit form (same fields, pre-filled)
+- Render status + deadline + category badges in topic list (attachment badge hidden until Phase 2)
+- Update `index.html` Active Boards widget to show badges; filter closed topics out
 
-**Deliverable:** Topics have structure and urgency at a glance, on both the messageboard and the dashboard.
+**Deliverable:** Topics have structure and urgency at a glance on both the messageboard and dashboard.
 
 ### Phase 2 — File Attachments
 
-Files changed: `messageboard.html`, `documents.html`
+**Files changed:** `messageboard.html`, `documents.html`
 
-- Add drag-and-drop file area to topic creation and edit form
-- Upload files to Firebase Storage at `topics/{topicId}/attachments/{filename}`
-- Write `attachments[]` array to the topic document on save
-- Render attachment chips in topic list view
-- Add "Topic'e Ekle" dropdown to `documents.html` upload form; when selected, append to topic's `attachments[]`
+- Add drag-and-drop file upload to topic creation and edit form
+- Storage path: `topics/{topicId}/attachments/{timestamp}-{sanitizedFilename}`
+- Write `attachments[]` to topic document on save
+- Render `📎 N` attachment chips in topic list and dashboard widget
+- Add "Topic'e Ekle" dropdown to `documents.html` upload form with best-effort dual-write
 
 ### Phase 3 — Announcement Linking
 
-Files changed: `messageboard.html`, `announcements.html`
+**Files changed:** `messageboard.html`, `announcements.html`
 
-- Add "İlişkili Duyuru" dropdown to topic creation form; write `linkedAnnouncementId` to topic
-- Add "İlişkili Konu" dropdown to announcement creation form; write `linkedAnnouncementId` to topic
-- In `messageboard.html` topic detail view, fetch and display the linked announcement as a highlighted card
+- Add "İlişkili Duyuru" dropdown to topic creation/edit form; populate from announcements (ordered by `createdAt` desc, limit 50)
+- Add "İlişkili Konu" dropdown to announcement creation form; populate from open/in-progress topics (ordered by `createdAt` desc, limit 50)
+- Write sequence on save: save announcement → update topic `linkedAnnouncementId` → update announcement `linkedTopicId`
+- In `messageboard.html` topic detail view, if `linkedAnnouncementId` is set, fetch and display the linked announcement as a highlighted card showing: title, first 120 characters of body, creation date, and a "Duyuruya Git →" link to `announcements.html`
 
 ---
 
@@ -137,12 +196,15 @@ Files changed: `messageboard.html`, `announcements.html`
 - No read-receipt or notification system (separate feature area)
 - No school-level scoping (topics remain platform-wide)
 - No mobile-specific layout changes
+- No full-text search on the topic dropdown — limit 50 ordered by recency is sufficient at current scale
 
 ---
 
 ## Success Criteria
 
 - A `central_admin` can create a topic with status, deadline, and category in one form submission
+- A `central_admin` can edit an existing topic's status, deadline, category, and attachments
 - The dashboard Active Boards widget shows status and deadline without navigating away
 - A document uploaded via `documents.html` can be attached to a topic in the same upload flow
-- An announcement can be linked to a topic so both sides reference each other
+- An announcement can be linked to a topic; both documents reference each other (`linkedAnnouncementId` on topic, `linkedTopicId` on announcement)
+- Partial write failures surface as error toasts without data loss
