@@ -102,3 +102,9 @@ Object.keys(cfg).forEach((key) => {
 
 
 
+
+// Copy calendar-fallback.js
+if (fs.existsSync("calendar-fallback.js")) {
+  fs.copyFileSync("calendar-fallback.js", require("path").join("dist", "calendar-fallback.js"));
+  console.log("Copied: calendar-fallback.js");
+}

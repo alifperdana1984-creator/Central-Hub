@@ -106,31 +106,45 @@ document.addEventListener('authReady', ({ detail: { user, profile } }) => {
 
 ## Role System
 
-Roles are stored in Firestore at `users/{uid}.role` (string field).
+Each platform has its **own** Firestore role field — there is no single shared `role` field. The legacy `role` field still exists on old documents but is no longer the source of truth.
 
-| Role                  | Description                          | CentralHub | Academic Hub | Teachers Hub |
-|-----------------------|--------------------------------------|:----------:|:------------:|:------------:|
-| `central_admin`       | Super-admin, created manually only   | ✓          | ✓            | ✓            |
-| `academic_coordinator`| Academic management staff            | ✗          | ✓            | ✓            |
-| `teacher`             | Classroom teacher                    | ✗          | ✗            | ✓            |
+| Platform      | Firestore field       | Allowed values                          |
+|---------------|-----------------------|-----------------------------------------|
+| CentralHub    | `role_centralhub`     | `'central_user'` \| `'central_admin'`  |
+| Academic Hub  | `role_academichub`    | `'academic_user'` \| `'academic_admin'`|
+| Teachers Hub  | `role_teachershub`    | `'teachers_user'` \| `'teachers_admin'`|
+| Research Hub  | `role_researchhub`    | `'research_user'` \| `'research_admin'`|
 
-**CentralHub allowed roles:** `['central_admin']` — the most restrictive app.
+**CentralHub allowed values:** `role_centralhub === 'central_admin'`.
 
-`central_admin` accounts are created **manually** in the Firebase Console (email/password), never via self-registration. New users who sign in for the first time get a Firestore profile with **no role**; a `central_admin` must assign a role before they can access any protected page.
+`auth-guard.js` also accepts the legacy `role === 'central_admin'` for backwards compatibility with accounts that have not logged in since the migration.
+
+`central_admin` accounts are created **manually** in the Firebase Console (email/password), never via self-registration. First login auto-assigns `central_user` via `setDoc` with `{ merge: true }`.
+
+**isAdmin check pattern (always use both for safety):**
+```js
+const isAdmin = profile?.role_centralhub === 'central_admin'
+             || profile?.role === 'central_admin'; // legacy fallback
+```
 
 ---
 
 ## Firestore Collections
 
-| Collection              | Purpose                                      | Write access         |
-|-------------------------|----------------------------------------------|----------------------|
-| `users/{uid}`           | User profiles (uid, email, displayName, photoURL, role, createdAt) | owner or central_admin |
-| `schools/{schoolId}`    | Partner school records                       | central_admin        |
-| `staff/{staffId}`       | Staff records                                | central_admin        |
-| `announcements/{annId}` | Platform-wide announcements                  | central_admin        |
-| `central_documents/{docId}` | CentralHub-managed documents (was `documents` before migration) | central_admin |
-| `topics/{topicId}`      | Message board topics                         | any authorised user  |
-| `topics/{topicId}/replies/{replyId}` | Message board replies           | any authorised user  |
+| Collection                          | Purpose                                                          | Write access        |
+|-------------------------------------|------------------------------------------------------------------|---------------------|
+| `users/{uid}`                       | User profiles (uid, email, displayName, photoURL, role_centralhub, role_academichub, role_teachershub, role_researchhub, createdAt, lastLoginAt) | owner or central_admin |
+| `schools/{schoolId}`                | Partner school records                                           | central_admin       |
+| `staff/{staffId}`                   | Staff records                                                    | central_admin       |
+| `announcements/{annId}`             | Platform-wide announcements                                      | central_admin       |
+| `central_documents/{docId}`         | CentralHub-managed documents (was `documents` before migration)  | central_admin       |
+| `topics/{topicId}`                  | Message board topics                                             | any authorised user |
+| `topics/{topicId}/replies/{replyId}`| Message board replies                                            | any authorised user |
+| `activity_projects/{projectId}`     | Activity kanban boards                                           | central_admin       |
+| `activity_tasks/{taskId}`           | Tasks inside activity boards (`projectId` field links to project)| central_admin       |
+| `surveys/{surveyId}`                | Cross-platform surveys                                           | central_admin       |
+| `central_certificates/{certId}`     | Workshop certificate records                                     | central_admin       |
+| `feedback/{feedbackId}`             | User feedback submissions from the dashboard floating button     | any authorised user |
 
 **Timestamp field:** always `createdAt` (serverTimestamp). Do not use `timestamp` — that was the legacy name.
 
@@ -155,8 +169,9 @@ Academic Hub and Teachers Hub do NOT have their own `firestore.rules`. Never cre
 
 ### What `build.js` does:
 1. Generates `dist/firebase-config.js` from Vercel environment variables.
-2. Copies all HTML files into `dist/`.
-3. Copies `auth-guard.js` and `resources/` into `dist/`.
+2. Injects `partials/navbar.html` into every HTML page (replacing `<!-- SHARED_NAVBAR -->`).
+3. Copies all HTML files into `dist/`.
+4. Copies `auth-guard.js`, `calendar-fallback.js`, and `resources/` into `dist/`.
 
 ### Vercel environment variables required:
 ```
@@ -178,33 +193,48 @@ firebase deploy --only firestore:rules --project centralhub-8727b
 
 ## Pages
 
-| File                | Clean URL        | Purpose                        |
-|---------------------|------------------|--------------------------------|
-| `index.html`        | `/`              | Dashboard / home               |
-| `login.html`        | `/login`         | Login page (no auth guard)     |
-| `announcements.html`| `/announcements` | Create/manage announcements    |
-| `messageboard.html` | `/messageboard`  | Platform message board         |
-| `schools.html`      | `/schools`       | School management              |
-| `staff.html`        | `/staff`         | Staff management               |
-| `documents.html`    | `/documents`     | Document management (uses `central_documents` collection) |
-| `academics.html`    | `/academics`     | Academics module hub           |
-| `igcse-pacing.html` | `/igcse-pacing`  | IGCSE pacing guide management (central_admin only) |
-| `console.html`      | `/console`       | User management (central_admin only) |
+| File                               | Clean URL                       | Purpose                                           |
+|------------------------------------|---------------------------------|---------------------------------------------------|
+| `index.html`                       | `/`                             | Dashboard / home                                  |
+| `login.html`                       | `/login`                        | Login page (no auth guard)                        |
+| `announcements.html`               | `/announcements`                | Create/manage announcements                       |
+| `messageboard.html`                | `/messageboard`                 | Platform message board                            |
+| `schools.html`                     | `/schools`                      | School management                                 |
+| `staff.html`                       | `/staff`                        | Staff management                                  |
+| `documents.html`                   | `/documents`                    | Document management (`central_documents` collection) |
+| `academics.html`                   | `/academics`                    | Academics module hub                              |
+| `academic-calendar.html`           | `/academic-calendar`            | Academic calendar (reads Google Apps Script API)  |
+| `igcse-pacing.html`                | `/igcse-pacing`                 | IGCSE pacing guide management                     |
+| `as-alevel-pacing.html`            | `/as-alevel-pacing`             | A-Level pacing guide                              |
+| `secondary-checkpoint-pacing.html` | `/secondary-checkpoint-pacing`  | Secondary checkpoint pacing                       |
+| `console.html`                     | `/console`                      | User management — sets all 4 platform role fields |
+| `appraisals.html`                  | `/appraisals`                   | Staff appraisal hub                               |
+| `school-appraisals.html`           | `/school-appraisals`            | School-level appraisals                           |
+| `teacher-appraisals.html`          | `/teacher-appraisals`           | Teacher appraisals                                |
+| `ease-system.html`                 | `/ease-system`                  | EASE assessment system                            |
+| `assessments.html`                 | `/assessments`                  | Assessments module hub                            |
+| `activities.html`                  | `/activities`                   | Activity boards / project kanban                  |
+| `surveys.html`                     | `/surveys`                      | Survey response viewer                            |
+| `survey-console.html`              | `/survey-console`               | Survey creation & management                      |
+| `certificates.html`                | `/certificates`                 | Workshop certificate tracking                     |
+| `certificate-verify.html`          | `/certificate-verify`           | Public certificate verification (no auth guard)   |
 
 ---
 
 ## Key Files
 
-| File                         | Purpose                                                       |
-|------------------------------|---------------------------------------------------------------|
-| `auth-guard.js`              | Auth + role gate for all protected pages (modular SDK v10)    |
-| `build.js`                   | Vercel build script — generates dist/firebase-config.js, copies assets |
-| `firebase.json`              | Firestore rules config (no hosting section used)              |
-| `firebase-config.js`         | Local dev config (gitignored)                                 |
-| `firebase-config.example.js` | Template for firebase-config.js                               |
-| `firestore.rules`            | Firestore security rules — **THE authoritative copy, deploy from here** |
-| `vercel.json`                | Vercel deployment config (build cmd, output dir)              |
-| `resources/`                 | Static assets                                                 |
+| File                         | Purpose                                                                                   |
+|------------------------------|-------------------------------------------------------------------------------------------|
+| `auth-guard.js`              | Auth + role gate for all protected pages (modular SDK v10)                                |
+| `build.js`                   | Vercel build script — injects navbar, generates firebase-config.js, copies assets         |
+| `partials/navbar.html`       | Shared navbar HTML+CSS+JS injected into every page via `<!-- SHARED_NAVBAR -->` comment   |
+| `calendar-fallback.js`       | Static fallback calendar events (`window.CAL_DEMO_EVENTS`) — update each academic year    |
+| `firebase.json`              | Firestore rules config (no hosting section used)                                          |
+| `firebase-config.js`         | Local dev config (gitignored)                                                             |
+| `firebase-config.example.js` | Template for firebase-config.js                                                           |
+| `firestore.rules`            | Firestore security rules — **THE authoritative copy, deploy from here**                   |
+| `vercel.json`                | Vercel deployment config (build cmd, output dir)                                          |
+| `resources/`                 | Static assets                                                                             |
 
 ---
 
@@ -218,3 +248,8 @@ firebase deploy --only firestore:rules --project centralhub-8727b
 - **Auth guard goes first.** `auth-guard.js` must be the first `<script type="module">` on protected pages.
 - **Use `authReady` event** to gate all Firestore reads — never call `window.db` before the event fires.
 - **Login redirects use clean URLs:** `login`, not `login.html`. Auth guard redirects to `'login'` and `'login?error=access'`.
+- **Role field is `role_centralhub`**, NOT the legacy `role` field. Always check `profile?.role_centralhub` first, with `profile?.role` as a fallback for legacy accounts.
+- **Shared navbar** lives in `partials/navbar.html`. Every page uses `<!-- SHARED_NAVBAR -->` which gets replaced at build time. Do NOT put nav HTML directly in individual pages.
+- **Calendar fallback** is `window.CAL_DEMO_EVENTS` loaded from `calendar-fallback.js`. Do NOT inline the array inside page scripts — update the standalone file instead.
+- **N+1 Firestore queries are forbidden.** When fetching sub-collections for a list of parents (e.g. tasks for projects), always use a single `where('parentId', 'in', ids)` query and group results in JS. The `in` operator supports up to 30 values.
+- **Event notification modal** only appears for events ≤7 days away. Do not change this threshold without user approval.

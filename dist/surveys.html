@@ -778,6 +778,86 @@
     .search-bar-wrap { max-width: 100%; }
     .search-dropdown { min-width: 320px; left: auto; right: 0; }
   }
+
+  /* ===== MOBILE NAV ===== */
+  .nav-hamburger {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    color: rgba(255,255,255,0.7);
+    flex-shrink: 0;
+    transition: color 0.2s ease, background 0.2s ease;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-hamburger:hover { color: #fff; background: rgba(255,255,255,0.08); }
+  @media (max-width: 768px) {
+    .nav-hamburger { display: flex; }
+  }
+
+  .mobile-nav-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .mobile-nav-overlay.open { opacity: 1; }
+
+  .mobile-nav-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(280px, 85vw);
+    height: 100%;
+    background: #0f0f1e;
+    border-left: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+  }
+  .mobile-nav-overlay.open .mobile-nav-drawer { transform: translateX(0); }
+
+  .mobile-nav-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+  .mobile-nav-brand { font-size: 0.95rem; font-weight: 600; color: #fff; letter-spacing: -0.02em; }
+  .mobile-nav-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.55);
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.2s ease;
+  }
+  .mobile-nav-close:hover { color: #fff; }
+
+  .mobile-nav-links { display: flex; flex-direction: column; padding: 12px 0; flex: 1; }
+  .mobile-nav-link {
+    display: block;
+    font-size: 0.925rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    text-decoration: none;
+    padding: 11px 20px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .mobile-nav-link:hover, .mobile-nav-link.active { color: #fff; background: rgba(255,255,255,0.06); }
 </style>
 
 <nav class="top-nav" aria-label="Main navigation">
@@ -829,6 +909,12 @@
     </div>
   </div>
 
+  <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileNavOverlay">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
+
   <div class="nav-auth">
     <!-- Notifications -->
     <div class="nav-notifications" id="navNotifications">
@@ -869,6 +955,33 @@
     <button class="btn-logout" id="logoutBtn">Sign out</button>
   </div>
 </nav>
+
+<!-- Mobile nav drawer -->
+<div class="mobile-nav-overlay" id="mobileNavOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+  <div class="mobile-nav-drawer">
+    <div class="mobile-nav-head">
+      <span class="mobile-nav-brand">CentralHub</span>
+      <button class="mobile-nav-close" id="mobileNavClose" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="mobile-nav-links" aria-label="Mobile navigation links">
+      <a href="index"              class="mobile-nav-link" data-mob-page="index">Dashboard</a>
+      <a href="academic-calendar"  class="mobile-nav-link" data-mob-page="academics">Academic Calendar</a>
+      <a href="schools"            class="mobile-nav-link" data-mob-page="schools">Schools</a>
+      <a href="staff"              class="mobile-nav-link" data-mob-page="staff">Staff</a>
+      <a href="announcements"      class="mobile-nav-link" data-mob-page="announcements">Announcements</a>
+      <a href="messageboard"       class="mobile-nav-link" data-mob-page="messageboard">Message Board</a>
+      <a href="documents"          class="mobile-nav-link" data-mob-page="documents">Documents</a>
+      <a href="activities"         class="mobile-nav-link" data-mob-page="activities">Activities</a>
+      <a href="survey-console"     class="mobile-nav-link" data-mob-page="survey-console">Surveys</a>
+      <a href="https://academichub.eduversal.org"  class="mobile-nav-link" target="_blank" rel="noopener">Academic Hub ↗</a>
+      <a href="https://teachershub.eduversal.org"  class="mobile-nav-link" target="_blank" rel="noopener">Teachers Hub ↗</a>
+    </nav>
+  </div>
+</div>
 
 <script>
   (function () {
@@ -914,6 +1027,53 @@
       const dd2 = document.getElementById('notifDropdown');
       if (dd1) dd1.classList.remove('open');
       if (dd2) dd2.classList.remove('open');
+    });
+
+    // ── Mobile nav hamburger ──────────────────────────────────────────────────
+    const mobileOverlay = document.getElementById('mobileNavOverlay');
+    const hamburger = document.getElementById('navHamburger');
+    const mobileClose = document.getElementById('mobileNavClose');
+
+    function openMobileNav() {
+      if (!mobileOverlay) return;
+      mobileOverlay.style.display = 'block';
+      requestAnimationFrame(() => mobileOverlay.classList.add('open'));
+      mobileOverlay.setAttribute('aria-hidden', 'false');
+      hamburger && hamburger.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      // Highlight current page in drawer
+      const rawPath = window.location.pathname.split('/').pop() || 'index';
+      const page = rawPath.replace(/\.html$/i, '') || 'index';
+      document.querySelectorAll('.mobile-nav-link[data-mob-page]').forEach((a) => {
+        a.classList.toggle('active', a.getAttribute('data-mob-page') === page);
+      });
+      // Focus first link for accessibility
+      const firstLink = mobileOverlay.querySelector('.mobile-nav-link');
+      if (firstLink) firstLink.focus();
+    }
+
+    function closeMobileNav() {
+      if (!mobileOverlay) return;
+      mobileOverlay.classList.remove('open');
+      mobileOverlay.setAttribute('aria-hidden', 'true');
+      hamburger && hamburger.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      setTimeout(() => { mobileOverlay.style.display = 'none'; }, 280);
+    }
+
+    if (hamburger) hamburger.addEventListener('click', openMobileNav);
+    if (mobileClose) mobileClose.addEventListener('click', closeMobileNav);
+    if (mobileOverlay) {
+      // Close when clicking the backdrop (outside the drawer)
+      mobileOverlay.addEventListener('click', function (e) {
+        if (e.target === mobileOverlay) closeMobileNav();
+      });
+    }
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && mobileOverlay && mobileOverlay.classList.contains('open')) {
+        closeMobileNav();
+      }
     });
   })();
 </script>
