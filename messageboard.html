@@ -426,6 +426,16 @@
     showView('thread');
     document.getElementById('threadCat').innerHTML  = CAT_BADGE[topic.category] || '';
     document.getElementById('threadTitle').textContent = topic.title || 'Untitled';
+    let editBtn = document.getElementById('editTopicBtn');
+    if (!editBtn) {
+      editBtn = document.createElement('button');
+      editBtn.id        = 'editTopicBtn';
+      editBtn.className = 'btn-cancel-form';
+      editBtn.style.cssText = 'margin-bottom:14px;font-size:0.82rem;';
+      editBtn.textContent   = '✎ Edit Topic';
+      document.getElementById('backBtn').insertAdjacentElement('afterend', editBtn);
+    }
+    editBtn.onclick = () => openEditForm(topic);
     document.getElementById('replyText').value = '';
     document.getElementById('replyError').classList.remove('visible');
 
@@ -464,6 +474,26 @@
       document.getElementById('replyList').innerHTML = '<p style="color:var(--ink-3);font-size:.85rem">Could not load replies.</p>';
     }
   }
+
+  // ===== Edit Topic form =====
+  function openEditForm(topic) {
+    editingTopicId = topic.id;
+    document.getElementById('topicCat').value    = topic.category || '';
+    document.getElementById('topicTitle').value  = topic.title || '';
+    document.getElementById('topicBody').value   = topic.body || '';
+    document.getElementById('topicStatus').value = topic.status || 'open';
+    document.getElementById('topicWsCat').value  = topic.workspaceCategory || '';
+    if (topic.deadline) {
+      const d = topic.deadline.toDate ? topic.deadline.toDate() : new Date(topic.deadline);
+      document.getElementById('topicDeadline').value = d.toISOString().split('T')[0];
+    } else {
+      document.getElementById('topicDeadline').value = '';
+    }
+    document.getElementById('topicFormTitle').textContent = 'Edit Topic';
+    document.getElementById('topicError').classList.remove('visible');
+    showView('newTopic');
+  }
+  window.openEditForm = openEditForm;
 
   // ===== Post reply =====
   async function postReply() {
