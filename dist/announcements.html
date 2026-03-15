@@ -1396,13 +1396,13 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
         Lock this post (only you can edit)
       </label>
       <div class="form-group">
-        <label class="form-label" for="fieldLinkedTopic">İlişkili Konu</label>
+        <label class="form-label" for="fieldLinkedTopic">Linked Topic</label>
         <select class="form-input" id="fieldLinkedTopic">
           <option value="">None</option>
           <!-- populated by loadTopicDropdownForAnn() -->
         </select>
         <p style="font-size:0.76rem;color:#8888a8;margin-top:3px;">
-          Optional — Bu duyuru seçilen topic sayfasında İlişkili Duyuru olarak görünecek.
+          Optional — this announcement will appear as a linked announcement on the selected topic's thread page.
         </p>
       </div>
     </div>
@@ -1449,7 +1449,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
     db = window.db;
     storage = getStorage(window.firebaseApp);
     currentUser = user;
-    isAdmin = profile.role === 'central_admin';
+    isAdmin = profile?.role_centralhub === 'central_admin' || profile?.role === 'central_admin';
     if (isAdmin) document.getElementById('addAnnBtn').style.display = 'flex';
     await loadAnnouncements();
     bindControls();
@@ -1486,7 +1486,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
 
   async function loadAnnouncements() {
     try {
-      const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt', 'desc')));
+      const snap = await getDocs(query(collection(db, 'announcements'), orderBy('createdAt', 'desc'), limit(200)));
       allAnns = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .filter(a => !a.platforms || a.platforms.includes('centralhub'));
       updateStats();
@@ -1531,7 +1531,14 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
     document.getElementById('removeImageBtn').addEventListener('click', removeModalImage);
     document.getElementById('lightboxClose').addEventListener('click', closeImageLightbox);
     document.getElementById('imageLightbox').addEventListener('click', e => { if (e.target.id === 'imageLightbox') closeImageLightbox(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeImageLightbox(); });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      if (document.getElementById('imageLightbox').classList.contains('open')) {
+        closeImageLightbox();
+      } else if (document.getElementById('modalOverlay').classList.contains('open')) {
+        closeModal();
+      }
+    });
   }
 
   function applyFilters() {
@@ -1691,14 +1698,47 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
   async function togglePin(id, currentlyPinned) {
     try {
       await updateDoc(fsDoc(db, 'announcements', id), { pinned: !currentlyPinned });
-      await loadAnnouncements();
+      const idx = allAnns.findIndex(a => a.id === id);
+      if (idx >= 0) allAnns[idx] = { ...allAnns[idx], pinned: !currentlyPinned };
+      updateStats();
+      applyFilters();
     } catch (e) {
-      alert(e.message);
+      showPinError(id, e.message);
     }
   }
 
+  function showPinError(id, msg) {
+    const card = document.getElementById('ann-' + id);
+    if (!card) return;
+    let errEl = card.querySelector('.pin-error');
+    if (!errEl) {
+      errEl = document.createElement('p');
+      errEl.className = 'pin-error';
+      errEl.style.cssText = 'font-size:0.78rem;color:#dc2626;margin-top:6px;';
+      card.appendChild(errEl);
+    }
+    errEl.textContent = msg;
+    setTimeout(() => errEl.remove(), 4000);
+  }
+
   async function deleteAnn(id) {
-    if (!confirm('Delete this announcement? This cannot be undone.')) return;
+    const btn = document.querySelector(`#ann-${id} .btn-icon-delete`);
+    if (!btn) return;
+    if (btn.dataset.confirming !== 'true') {
+      btn.dataset.confirming = 'true';
+      btn.title = 'Click again to confirm delete';
+      btn.style.color = '#dc2626';
+      btn.style.borderColor = '#fca5a5';
+      btn.style.background = '#fee2e2';
+      setTimeout(() => {
+        btn.dataset.confirming = 'false';
+        btn.title = 'Delete';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+        btn.style.background = '';
+      }, 3000);
+      return;
+    }
     try {
       const a = allAnns.find(x => x.id === id);
       if (a?.imagePath) await deleteStorageFile(a.imagePath);
@@ -1707,7 +1747,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       updateStats();
       applyFilters();
     } catch (e) {
-      alert(e.message);
+      showPinError(id, e.message);
     }
   }
 
@@ -1757,7 +1797,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
     modalExistingImagePath = a.imagePath || '';
     modalRemoveExistingImage = false;
     renderModalImagePreview();
-    document.getElementById('fieldLinkedTopic').value = '';
+    document.getElementById('fieldLinkedTopic').value = a.linkedTopicId || '';
     document.getElementById('saveBtn').textContent = 'Update';
     hideErr();
     document.getElementById('modalOverlay').classList.add('open');

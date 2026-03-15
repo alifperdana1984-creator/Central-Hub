@@ -1525,24 +1525,102 @@
         background: var(--accent-2);
       }
 
-      /* ACTIVE TOPICS PANEL */
-      .active-topics-panel { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; margin-top:20px; }
-      .active-topics-head { padding:14px 18px 12px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-      .active-topics-head h3 { font-size:0.925rem; font-weight:600; color:var(--ink); }
-      .active-topics-head a { font-size:0.8rem; color:var(--accent); text-decoration:none; }
-      .active-topics-head a:hover { text-decoration:underline; }
-      .at-item { display:flex; flex-direction:column; gap:4px; padding:11px 18px; border-bottom:1px solid var(--paper-2); transition:background 0.15s; text-decoration:none; }
-      .at-item:last-child { border-bottom:none; }
-      .at-item:hover { background:var(--paper); }
-      .at-badges { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
-      .at-title { font-size:0.875rem; font-weight:500; color:var(--ink); }
-      .at-meta { font-size:0.75rem; color:var(--ink-3); }
-      .at-ws-badge { font-size:0.65rem; font-weight:700; padding:1px 5px; border-radius:3px; }
-      .at-status-open        { background:#d1fae5; color:#065f46; }
-      .at-status-in_progress { background:#fef3c7; color:#92400e; }
-      .at-deadline { font-size:0.65rem; font-weight:600; padding:1px 5px; border-radius:3px; background:#fee2e2; color:#dc2626; }
-      .at-cat { font-size:0.65rem; font-weight:600; padding:1px 5px; border-radius:3px; background:#e0f2fe; color:#0369a1; }
-      .at-empty { padding:24px 18px; text-align:center; color:var(--ink-3); font-size:0.85rem; }
+      /* ===== ACTIVE TOPICS PANEL ===== */
+      .active-topics-panel {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        margin-top: 20px;
+      }
+      .active-topics-head {
+        padding: 14px 18px 12px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .active-topics-head h3 {
+        font-size: 0.925rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .active-topics-head a {
+        font-size: 0.8rem;
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .active-topics-head a:hover {
+        text-decoration: underline;
+      }
+      .at-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--paper-2);
+        transition: background 0.15s ease;
+        text-decoration: none;
+      }
+      .at-item:last-child {
+        border-bottom: none;
+      }
+      .at-item:hover {
+        background: var(--paper);
+      }
+      .at-badges {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .at-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--ink);
+      }
+      .at-meta {
+        font-size: 0.75rem;
+        color: var(--ink-3);
+      }
+      .at-ws-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 3px;
+      }
+      .at-status-open {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .at-status-in_progress {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .at-deadline {
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .at-cat {
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 1px 5px;
+        border-radius: 3px;
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .at-empty {
+        padding: 24px 18px;
+        text-align: center;
+        color: var(--ink-3);
+        font-size: 0.85rem;
+      }
 
       /* ===== RESPONSIVE ===== */
       @media (max-width: 1100px) {
@@ -1560,13 +1638,11 @@
         .boards-grid {
           grid-template-columns: repeat(2, 1fr);
         }
-        .upcoming-cards {
-          grid-template-columns: repeat(3, 1fr);
-        }
-      }
-      @media (max-width: 960px) {
         .modules-grid {
           grid-template-columns: 1fr;
+        }
+        .upcoming-cards {
+          grid-template-columns: repeat(3, 1fr);
         }
       }
       @media (max-width: 768px) {
@@ -3020,14 +3096,13 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
 
         <!-- RIGHT: Activity Feed -->
         <div>
-          <h2 class="section-label">Recent Announcements</h2>
           <div
             class="activity-panel"
             role="region"
             aria-label="Recent announcements"
           >
             <div class="activity-head">
-              <h3>Latest Updates</h3>
+              <h3>Recent Announcements</h3>
               <a href="announcements">View all</a>
             </div>
             <div class="activity-list" id="activityList">
@@ -3528,10 +3603,10 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       </div>
     </div>
 
-    <div id="feedbackModal" class="feedback-modal-overlay">
+    <div id="feedbackModal" class="feedback-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="feedbackModalTitle">
       <div class="feedback-modal">
         <div class="feedback-modal-header">
-          <h3 class="feedback-modal-title">Send Feedback</h3>
+          <h3 class="feedback-modal-title" id="feedbackModalTitle">Send Feedback</h3>
           <button
             class="feedback-modal-close"
             id="feedbackClose"
@@ -3614,11 +3689,14 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       import {
         collection,
         getDocs,
+        getCountFromServer,
+        onSnapshot,
         query,
         orderBy,
         where,
         limit,
         addDoc,
+        serverTimestamp,
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       function esc(str) {
@@ -3635,6 +3713,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
 
       let db;
       let isCentralAdmin = false;
+      let _unsubAnnouncements = null;
 
       // ── Calendar fallback data — loaded from calendar-fallback.js (window.CAL_DEMO_EVENTS)
       const CAL_DEMO_EVENTS = window.CAL_DEMO_EVENTS || [];
@@ -3787,6 +3866,12 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
           }
           document.getElementById("eventNotifyOk").addEventListener("click", closeEventNotify);
           document.getElementById("eventNotifyView").addEventListener("click", closeEventNotify);
+          document.addEventListener("keydown", function onEventNotifyEsc(e) {
+            if (e.key === "Escape") {
+              closeEventNotify();
+              document.removeEventListener("keydown", onEventNotifyEsc);
+            }
+          });
         }
 
         container.innerHTML = upcoming
@@ -3854,8 +3939,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
           document.getElementById("heroTitle").textContent =
             `Welcome, ${firstName}`;
 
-          loadStats();
-          loadQuickAccessCounts();
+          loadAllCounts();
           loadActivity();
           loadBoards();
           loadActiveSurveys();
@@ -3873,115 +3957,86 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
         el.classList.toggle("has-data", hasData);
       }
 
-      // ----- Stats -----
-      async function loadStats() {
-        const targets = [
-          {
-            key: "schools",
-            statId: "statSchools",
-            quickId: "quickCountSchools",
-          },
-          { key: "staff", statId: "statStaff", quickId: "quickCountStaff" },
-          {
-            key: "central_documents",
-            statId: "statDocs",
-            quickId: "quickCountDocuments",
-          },
-          {
-            key: "announcements",
-            statId: "statAnnouncements",
-            quickId: "quickCountAnnouncements",
-          },
-          { key: "surveys", statId: null, quickId: "quickCountSurveys" },
+      // ----- All Counts (merged: stats + quick access) -----
+      async function loadAllCounts() {
+        const countTargets = [
+          { col: "schools",              statId: "statSchools",       quickId: "quickCountSchools" },
+          { col: "staff",                statId: "statStaff",         quickId: "quickCountStaff" },
+          { col: "central_documents",    statId: "statDocs",          quickId: "quickCountDocuments" },
+          { col: "announcements",        statId: "statAnnouncements", quickId: "quickCountAnnouncements" },
+          { col: "topics",               statId: null,                quickId: "quickCountMessageboard" },
+          { col: "activity_projects",    statId: null,                quickId: "quickCountActivities" },
+          { col: "central_certificates", statId: null,                quickId: "quickCountCertificates" },
         ];
 
         const settled = await Promise.allSettled(
-          targets.map((t) => {
-            if (t.key !== "surveys") return getDocs(collection(db, t.key));
-            const surveysRef = collection(db, "surveys");
-            return isCentralAdmin
-              ? getDocs(surveysRef)
-              : getDocs(
-                  query(
-                    surveysRef,
-                    where("platforms", "array-contains", "centralhub"),
-                  ),
-                );
-          }),
+          countTargets.map((t) => getCountFromServer(collection(db, t.col))),
         );
 
         settled.forEach((res, idx) => {
-          const t = targets[idx];
-          const count = res.status === "fulfilled" ? res.value.size : "—";
+          const t = countTargets[idx];
+          const count = res.status === "fulfilled" ? res.value.data().count : "—";
           if (t.statId) {
-            const statEl = document.getElementById(t.statId);
-            if (statEl) statEl.textContent = count;
+            const el = document.getElementById(t.statId);
+            if (el) el.textContent = count;
           }
           setQuickCount(t.quickId, count);
           if (res.status === "rejected") {
-            console.error(`Stats load error (${t.key}):`, res.reason);
+            console.error(`Count error (${t.col}):`, res.reason);
           }
         });
-      }
 
-      async function loadQuickAccessCounts() {
+        // Surveys count — conditional query (admin sees all, others see only centralhub)
         try {
-          const [topicsSnap, projectsSnap, certificatesSnap] =
-            await Promise.all([
-              getDocs(collection(db, "topics")),
-              getDocs(collection(db, "activity_projects")),
-              getDocs(collection(db, "central_certificates")),
-            ]);
-          setQuickCount("quickCountMessageboard", topicsSnap.size);
-          setQuickCount("quickCountActivities", projectsSnap.size);
-          setQuickCount("quickCountCertificates", certificatesSnap.size);
+          const surveysRef = collection(db, "surveys");
+          const surveysSnap = isCentralAdmin
+            ? await getCountFromServer(surveysRef)
+            : await getCountFromServer(
+                query(surveysRef, where("platforms", "array-contains", "centralhub")),
+              );
+          setQuickCount("quickCountSurveys", surveysSnap.data().count);
         } catch (err) {
-          console.error("Quick access count load error:", err);
-          setQuickCount("quickCountMessageboard", "—");
-          setQuickCount("quickCountActivities", "—");
-          setQuickCount("quickCountCertificates", "—");
+          console.error("Surveys count error:", err);
+          setQuickCount("quickCountSurveys", "—");
         }
       }
 
-      // ----- Activity / Announcements feed -----
-      async function loadActivity() {
+      // ----- Activity / Announcements feed (live) -----
+      function loadActivity() {
         const list = document.getElementById("activityList");
-        try {
-          const snap = await getDocs(
-            query(
-              collection(db, "announcements"),
-              orderBy("createdAt", "desc"),
-              limit(6),
-            ),
-          );
+        if (_unsubAnnouncements) _unsubAnnouncements();
 
-          if (snap.empty) {
-            list.innerHTML =
-              '<div class="act-empty">No announcements yet.</div>';
-            return;
-          }
-
-          list.innerHTML = snap.docs
-            .map((docSnap) => {
-              const d = docSnap.data();
-              const author = d.author || "Admin";
-              const initials = author
-                .split(" ")
-                .map((n) => n[0])
-                .join("")
-                .slice(0, 2)
-                .toUpperCase();
-              const date = d.createdAt?.toDate
-                ? d.createdAt.toDate().toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                  })
-                : "";
-              const pinTag = d.pinned
-                ? `<span class="act-pin">Pinned</span>`
-                : "";
-
-              return `
+        _unsubAnnouncements = onSnapshot(
+          query(
+            collection(db, "announcements"),
+            orderBy("createdAt", "desc"),
+            limit(6),
+          ),
+          (snap) => {
+            if (snap.empty) {
+              list.innerHTML = '<div class="act-empty">No announcements yet.</div>';
+              return;
+            }
+            list.innerHTML = snap.docs
+              .map((docSnap) => {
+                const d = docSnap.data();
+                const author = d.author || "Admin";
+                const initials = author
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase();
+                const date = d.createdAt?.toDate
+                  ? d.createdAt.toDate().toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    })
+                  : "";
+                const pinTag = d.pinned
+                  ? `<span class="act-pin">Pinned</span>`
+                  : "";
+                return `
           <div class="activity-item">
             <div class="act-avatar" aria-hidden="true">${initials}</div>
             <div class="act-body">
@@ -3989,13 +4044,14 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
               <p class="act-meta">${esc(author)} &middot; ${date}</p>
             </div>
           </div>`;
-            })
-            .join("");
-        } catch (err) {
-          console.error("Activity load error:", err);
-          list.innerHTML =
-            '<div class="act-empty">Could not load announcements.</div>';
-        }
+              })
+              .join("");
+          },
+          (err) => {
+            console.error("Activity snapshot error:", err);
+            list.innerHTML = '<div class="act-empty">Could not load announcements.</div>';
+          },
+        );
       }
 
       // ----- Active Boards -----
@@ -4094,21 +4150,18 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
         try {
           const baseRef = collection(db, "surveys");
           const snap = isCentralAdmin
-            ? await getDocs(query(baseRef, limit(24)))
+            ? await getDocs(query(baseRef, where("status", "==", "published"), limit(6)))
             : await getDocs(
                 query(
                   baseRef,
+                  where("status", "==", "published"),
                   where("platforms", "array-contains", "centralhub"),
-                  limit(24),
+                  limit(6),
                 ),
               );
 
           const active = snap.docs
             .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-            .filter((s) => {
-              const status = String(s.status || "published").toLowerCase();
-              return status === "published" && s.allowResponses !== false;
-            })
             .sort(
               (a, b) =>
                 (b.createdAt?.toMillis?.() || 0) -
@@ -4226,32 +4279,34 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
         if (!grid) return;
         try {
           const snap = await getDocs(
-            query(collection(db, 'topics'), orderBy('createdAt', 'desc'), limit(20))
+            query(
+              collection(db, 'topics'),
+              where('status', 'in', ['open', 'in_progress']),
+              orderBy('createdAt', 'desc'),
+              limit(6),
+            )
           );
-          const topics = snap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .filter(t => !t.status || t.status === 'open' || t.status === 'in_progress')
-            .slice(0, 6);
+          const topics = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
           if (!topics.length) {
             grid.innerHTML = '<p class="boards-empty">No active topics. <a href="messageboard" style="color:var(--accent)">Go to Message Board</a> to create one.</p>';
             return;
           }
 
-          const statusColor = { open: '#059669', in_progress: '#d97706' };
+          const stripeColor = { open: '#059669', in_progress: '#d97706' };
           const statusLabel = { open: 'OPEN', in_progress: 'IN PROGRESS' };
 
           grid.innerHTML = topics.map(t => {
-            const color = statusColor[t.status] || '#6b7280';
+            const color = stripeColor[t.status] || '#6b7280';
             const label = statusLabel[t.status] || '';
             const attCount = (t.attachments || []).length;
 
             let meta = [];
-            if (label) meta.push(`<span style="background:${color}22;color:${color};font-size:0.68rem;font-weight:700;padding:1px 6px;border-radius:3px;">${label}</span>`);
-            if (t.workspaceCategory) meta.push(`<span style="background:#e0f2fe;color:#0369a1;font-size:0.68rem;font-weight:600;padding:1px 6px;border-radius:3px;">${esc(t.workspaceCategory)}</span>`);
+            if (label) meta.push(`<span class="at-ws-badge at-status-${t.status || 'open'}">${label}</span>`);
+            if (t.workspaceCategory) meta.push(`<span class="at-ws-badge at-cat">${esc(t.workspaceCategory)}</span>`);
             if (t.deadline) {
               const d = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
-              meta.push(`<span style="background:#fee2e2;color:#dc2626;font-size:0.68rem;font-weight:600;padding:1px 6px;border-radius:3px;">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`);
+              meta.push(`<span class="at-ws-badge at-deadline">⏰ ${d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>`);
             }
 
             const taskItems = [];
@@ -4270,7 +4325,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
                   <span class="board-card-dot" style="background:${color}"></span>
                   <span class="board-card-name-text">${esc(t.title || 'Untitled')}</span>
                 </p>
-                ${meta.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">${meta.join('')}</div>` : ''}
+                ${meta.length ? `<div class="at-badges">${meta.join('')}</div>` : ''}
                 ${taskHtml}
                 <div class="board-card-meta">
                   <span class="board-tasks-label">${metaLine.join(' · ')}</span>
@@ -4481,6 +4536,8 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
 
           try {
             // Fetch all collections in parallel (client-side filter — no composite index needed)
+            // limit(50) per collection to keep reads bounded as data grows
+            const SEARCH_LIMIT = 50;
             const [
               schoolsSnap,
               staffSnap,
@@ -4491,14 +4548,14 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
               certSnap,
               surveysSnap,
             ] = await Promise.allSettled([
-              getDocs(collection(db, "schools")),
-              getDocs(collection(db, "staff")),
-              getDocs(collection(db, "central_documents")),
-              getDocs(collection(db, "announcements")),
-              getDocs(collection(db, "topics")),
-              getDocs(collection(db, "activity_projects")),
-              getDocs(collection(db, "central_certificates")),
-              getDocs(collection(db, "surveys")),
+              getDocs(query(collection(db, "schools"),           limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "staff"),             limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "central_documents"), limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "announcements"),     limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "topics"),            limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "activity_projects"), limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "central_certificates"), limit(SEARCH_LIMIT))),
+              getDocs(query(collection(db, "surveys"),           limit(SEARCH_LIMIT))),
             ]);
 
             const get = (res) => res.status === "fulfilled"
@@ -4818,7 +4875,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
             message: message,
             userEmail: userEmail,
             userName: userName,
-            timestamp: new Date(),
+            createdAt: serverTimestamp(),
             page: "central-hub-index",
             userAgent: navigator.userAgent,
             status: "new",
@@ -4858,6 +4915,11 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
             submitBtn.disabled = false;
           }, 2000);
         }
+      });
+
+      // Clean up live listener on page unload
+      window.addEventListener("pagehide", () => {
+        if (_unsubAnnouncements) _unsubAnnouncements();
       });
     </script>
   </body>
