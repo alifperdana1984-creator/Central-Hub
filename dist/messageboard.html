@@ -11,7 +11,7 @@
     :root {
       --ink:#1c1c2e; --ink-2:#44445a; --ink-3:#8888a8;
       --paper:#f7f6f3; --paper-2:#efede8; --white:#ffffff;
-      --border:#e0ddd6; --accent:#0891b2; --accent-dk:#0e7490;
+      --border:#e0ddd6; --accent:#0891b2; --accent-dk:#0e7490; --accent-2:#e0f9ff;
       --shadow-sm:0 1px 4px rgba(28,28,46,.07);
       --shadow:0 3px 14px rgba(28,28,46,.10);
       --shadow-lg:0 10px 40px rgba(28,28,46,.16);
@@ -1162,6 +1162,9 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
         <div class="topic-row"><span class="skel" style="height:16px;width:70%;display:block"></span></div>
         <div class="topic-row"><span class="skel" style="height:16px;width:40%;display:block"></span></div>
       </div>
+      <div id="loadMoreWrap" style="display:none;text-align:center;margin-top:14px;">
+        <button class="btn-cancel-form" id="loadMoreBtn" style="font-size:0.85rem;padding:9px 24px;">Load more topics</button>
+      </div>
     </div>
 
     <!-- THREAD VIEW -->
@@ -1240,7 +1243,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
           <p class="form-hint">Optional — groups this topic by purpose</p>
         </div>
         <div class="form-group" style="margin-bottom:14px;">
-          <label class="form-label" for="topicLinkedAnn">İlişkili Duyuru</label>
+          <label class="form-label" for="topicLinkedAnn">Linked Announcement</label>
           <select class="form-select" id="topicLinkedAnn">
             <option value="">None</option>
             <!-- populated by loadAnnouncementDropdown() -->
@@ -1270,9 +1273,9 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
 <script src="firebase-config.js"></script>
 <script type="module" src="auth-guard.js"></script>
 <script type="module">
-  import { collection, getDocs, setDoc, updateDoc, getDoc,
-           doc as fsDoc, query, orderBy, serverTimestamp, increment,
-           arrayUnion, arrayRemove }
+  import { collection, getDocs, addDoc, setDoc, updateDoc, getDoc,
+           doc as fsDoc, query, orderBy, limit, serverTimestamp, increment,
+           arrayUnion, arrayRemove, deleteDoc }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
   import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
@@ -1282,8 +1285,11 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
   let allTopics    = [];
   let currentCat   = 'all';
   let currentUser  = null;
+  let isAdmin      = false;
   let openTopicId  = null;
   let editingTopicId = null;
+  const PAGE_SIZE  = 20;
+  let visibleCount = PAGE_SIZE;
   let pendingAttachments  = []; // { file: File, name: string } — not yet uploaded
   let existingAttachments = []; // { name, url, storagePath, uploadedAt, uploadedBy } — already in Firestore
 
@@ -1321,10 +1327,11 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
   }
 
   // ===== Auth ready =====
-  document.addEventListener('authReady', async ({ detail: { user } }) => {
+  document.addEventListener('authReady', async ({ detail: { user, profile } }) => {
     db = window.db;
     storage = getStorage(window.firebaseApp);
     currentUser = user;
+    isAdmin = profile?.role_centralhub === 'central_admin' || profile?.role === 'central_admin';
     await loadTopics();
     bindEvents();
     await loadAnnouncementDropdown();
@@ -1337,6 +1344,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       allTopics = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       updateCounts();
       renderTopics();
+      handleInitialHash();
     } catch(e) {
       document.getElementById('topicList').innerHTML = '<div class="empty-state">Could not load topics.</div>';
     }
@@ -1356,6 +1364,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
   // ===== Category select =====
   function selectCat(cat) {
     currentCat = cat;
+    visibleCount = PAGE_SIZE;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
     document.getElementById('listTitle').textContent = CAT_LABEL[cat] || cat;
     renderTopics();
@@ -1377,7 +1386,7 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
     }
     if (t.deadline) {
       const d = t.deadline.toDate ? t.deadline.toDate() : new Date(t.deadline);
-      html += `<span class="ws-deadline-badge">⏰ ${d.toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span>`;
+      html += `<span class="ws-deadline-badge">⏰ ${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>`;
     }
     const attCount = (t.attachments || []).length;
     if (attCount > 0) {
@@ -1400,8 +1409,15 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       return (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0);
     });
     const el = document.getElementById('topicList');
-    if (!list.length) { el.innerHTML = '<div class="empty-state">No topics yet. Be the first to start one!</div>'; return; }
-    el.innerHTML = list.map(t => {
+    const loadMoreWrap = document.getElementById('loadMoreWrap');
+    if (!list.length) {
+      el.innerHTML = '<div class="empty-state">No topics yet. Be the first to start one!</div>';
+      loadMoreWrap.style.display = 'none';
+      return;
+    }
+    const page = list.slice(0, visibleCount);
+    loadMoreWrap.style.display = list.length > visibleCount ? 'block' : 'none';
+    el.innerHTML = page.map(t => {
       const initials = (t.author||'?').split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
       const date = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
       const isClosed  = t.status === 'closed';
@@ -1435,19 +1451,24 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
     openTopicId = id;
     const topic = allTopics.find(t => t.id === id);
     if (!topic) return;
+    history.pushState({ topicId: id }, '', `#${id}`);
     showView('thread');
     document.getElementById('threadCat').innerHTML  = CAT_BADGE[topic.category] || '';
     document.getElementById('threadTitle').textContent = topic.title || 'Untitled';
-    let editBtn = document.getElementById('editTopicBtn');
-    if (!editBtn) {
-      editBtn = document.createElement('button');
-      editBtn.id        = 'editTopicBtn';
-      editBtn.className = 'btn-cancel-form';
-      editBtn.style.cssText = 'margin-bottom:14px;font-size:0.82rem;';
-      editBtn.textContent   = '✎ Edit Topic';
-      document.getElementById('backBtn').insertAdjacentElement('afterend', editBtn);
+    // Admin action buttons (edit / delete) — render fresh each time
+    let adminActions = document.getElementById('adminTopicActions');
+    if (adminActions) adminActions.remove();
+    if (isAdmin) {
+      adminActions = document.createElement('div');
+      adminActions.id = 'adminTopicActions';
+      adminActions.style.cssText = 'display:flex;gap:8px;margin-bottom:14px;';
+      adminActions.innerHTML = `
+        <button class="btn-cancel-form" id="editTopicBtn" style="font-size:0.82rem;">✎ Edit Topic</button>
+        <button class="btn-cancel-form" id="deleteTopicBtn" style="font-size:0.82rem;color:#dc2626;border-color:#fca5a5;">🗑 Delete Topic</button>`;
+      document.getElementById('backBtn').insertAdjacentElement('afterend', adminActions);
+      document.getElementById('editTopicBtn').onclick = () => openEditForm(topic);
+      document.getElementById('deleteTopicBtn').onclick = () => deleteTopic(topic);
     }
-    editBtn.onclick = () => openEditForm(topic);
     document.getElementById('replyText').value = '';
     document.getElementById('replyError').classList.remove('visible');
 
@@ -1480,11 +1501,11 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
           const excerpt  = fullText.slice(0, 120);
           linkedAnnEl.innerHTML = `
             <div class="linked-ann-card">
-              <p class="linked-ann-label">📣 İlişkili Duyuru</p>
+              <p class="linked-ann-label">📣 Linked Announcement</p>
               <p class="linked-ann-title">${esc(ann.title || 'Untitled')}</p>
               <p class="linked-ann-excerpt">${esc(excerpt)}${fullText.length > 120 ? '…' : ''}</p>
               <p class="linked-ann-meta">${annDate}</p>
-              <a href="announcements" class="linked-ann-link">Duyuruya Git →</a>
+              <a href="announcements" class="linked-ann-link">View Announcement →</a>
             </div>`;
         } else {
           linkedAnnEl.innerHTML = '';
@@ -1560,10 +1581,11 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
         replyCount: increment(1),
         lastReply:  serverTimestamp(),
       });
-      // Refresh topic in memory
+      // Refresh only this topic in memory (no full collection reload)
       const snap = await getDoc(fsDoc(db, 'topics', openTopicId));
       const idx  = allTopics.findIndex(t => t.id === openTopicId);
       if (idx >= 0) allTopics[idx] = { id: openTopicId, ...snap.data() };
+      updateCounts();
       document.getElementById('replyText').value = '';
       await openThread(openTopicId);
     } catch(e) {
@@ -1581,17 +1603,34 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
   const BLOCKED_EXTS = ['.exe', '.sh', '.bat', '.ps1'];
   const MAX_BYTES    = 20 * 1024 * 1024;
 
+  function safeUrl(url) {
+    try { return /^https?:\/\//i.test(url) ? url : '#'; } catch { return '#'; }
+  }
+
   function renderAttachmentChips() {
     const el = document.getElementById('attachmentChips');
     if (!el) return;
-    const pendingHtml  = pendingAttachments.map((a, i) =>
-      `<span class="attachment-chip">📎 ${esc(a.name)}<button type="button" onclick="removePendingAttachment(${i})" title="Remove">×</button></span>`
+    // Use data-index attributes + event delegation — avoids stale index closures
+    const pendingHtml = pendingAttachments.map((a, i) =>
+      `<span class="attachment-chip">📎 ${esc(a.name)}<button type="button" data-pending="${i}" title="Remove">×</button></span>`
     );
     const existingHtml = existingAttachments.map((a, i) =>
-      `<span class="attachment-chip"><a href="${esc(a.url)}" target="_blank" style="color:inherit;text-decoration:none">📎 ${esc(a.name)}</a><button type="button" onclick="removeExistingAttachment(${i})" title="Remove">×</button></span>`
+      `<span class="attachment-chip"><a href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">📎 ${esc(a.name)}</a><button type="button" data-existing="${i}" title="Remove">×</button></span>`
     );
     el.innerHTML = [...existingHtml, ...pendingHtml].join('');
   }
+
+  // Event delegation for attachment chip remove buttons
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-pending], button[data-existing]');
+    if (!btn) return;
+    if (btn.dataset.pending !== undefined) {
+      pendingAttachments.splice(Number(btn.dataset.pending), 1);
+      renderAttachmentChips();
+    } else if (btn.dataset.existing !== undefined) {
+      removeExistingAttachment(Number(btn.dataset.existing));
+    }
+  });
 
   function removePendingAttachment(i) {
     pendingAttachments.splice(i, 1);
@@ -1601,14 +1640,42 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
   async function removeExistingAttachment(i) {
     const att = existingAttachments[i];
     if (!editingTopicId) return;
-    if (!confirm(`Remove "${att.name}"?`)) return;
+    const errEl = document.getElementById('topicError');
     try {
       await deleteObject(storageRef(storage, att.storagePath)).catch(() => {}); // best-effort
       await updateDoc(fsDoc(db, 'topics', editingTopicId), { attachments: arrayRemove(att) });
       existingAttachments.splice(i, 1);
       renderAttachmentChips();
     } catch(e) {
-      alert('Could not remove attachment: ' + e.message);
+      errEl.textContent = 'Could not remove attachment: ' + e.message;
+      errEl.classList.add('visible');
+    }
+  }
+
+  async function deleteTopic(topic) {
+    const errEl = document.getElementById('replyError');
+    // Inline confirmation — no blocking confirm()
+    const btn = document.getElementById('deleteTopicBtn');
+    if (btn.dataset.confirming !== 'true') {
+      btn.dataset.confirming = 'true';
+      btn.textContent = '⚠ Click again to confirm delete';
+      setTimeout(() => { btn.dataset.confirming = ''; btn.textContent = '🗑 Delete Topic'; }, 3000);
+      return;
+    }
+    btn.disabled = true;
+    try {
+      // Delete all replies first
+      const rSnap = await getDocs(collection(db, 'topics', topic.id, 'replies'));
+      await Promise.all(rSnap.docs.map(d => deleteDoc(d.ref)));
+      await deleteDoc(fsDoc(db, 'topics', topic.id));
+      allTopics = allTopics.filter(t => t.id !== topic.id);
+      updateCounts();
+      showView('list');
+      renderTopics();
+    } catch(e) {
+      errEl.textContent = 'Could not delete topic: ' + e.message;
+      errEl.classList.add('visible');
+      btn.disabled = false;
     }
   }
 
@@ -1704,8 +1771,9 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
 
   // ===== Bind events =====
   function bindEvents() {
-    document.getElementById('searchInput').addEventListener('input', renderTopics);
-    document.getElementById('sortSelect').addEventListener('change', renderTopics);
+    document.getElementById('searchInput').addEventListener('input', () => { visibleCount = PAGE_SIZE; renderTopics(); });
+    document.getElementById('sortSelect').addEventListener('change', () => { visibleCount = PAGE_SIZE; renderTopics(); });
+    document.getElementById('loadMoreBtn').addEventListener('click', () => { visibleCount += PAGE_SIZE; renderTopics(); });
     document.getElementById('newTopicBtn').addEventListener('click', () => {
       document.getElementById('topicCat').value   = currentCat !== 'all' ? currentCat : '';
       document.getElementById('topicTitle').value = '';
@@ -1722,24 +1790,56 @@ document.addEventListener('authReady', async ({ detail: { user } }) => {
       renderAttachmentChips();
       showView('newTopic');
     });
-    document.getElementById('backBtn').addEventListener('click', () => showView('list'));
-    document.getElementById('cancelTopicBtn').addEventListener('click', () => showView('list'));
+    document.getElementById('backBtn').addEventListener('click', () => {
+      showView('list');
+      history.pushState(null, '', location.pathname);
+    });
+    document.getElementById('cancelTopicBtn').addEventListener('click', () => {
+      if (editingTopicId) {
+        openThread(editingTopicId);
+      } else {
+        showView('list');
+      }
+    });
     document.getElementById('postReplyBtn').addEventListener('click', postReply);
     document.getElementById('submitTopicBtn').addEventListener('click', submitTopic);
     document.getElementById('fileInput').addEventListener('change', (e) => {
+      const errEl = document.getElementById('topicError');
+      const fileErrors = [];
       Array.from(e.target.files).forEach(file => {
         const ext = '.' + file.name.split('.').pop().toLowerCase();
-        if (BLOCKED_EXTS.includes(ext)) { alert(`File type ${ext} is not allowed.`); return; }
-        if (file.size > MAX_BYTES) { alert(`${file.name} exceeds the 20 MB limit.`); return; }
+        if (BLOCKED_EXTS.includes(ext)) { fileErrors.push(`File type ${ext} is not allowed.`); return; }
+        if (file.size > MAX_BYTES) { fileErrors.push(`${file.name} exceeds the 20 MB limit.`); return; }
         pendingAttachments.push({ file, name: sanitizeFilename(file.name) });
-        renderAttachmentChips();
       });
+      renderAttachmentChips();
       e.target.value = '';
+      if (fileErrors.length) {
+        errEl.textContent = fileErrors.join(' ');
+        errEl.classList.add('visible');
+      }
     });
   }
 
   function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ===== Browser back/forward support =====
+  window.addEventListener('popstate', (e) => {
+    if (e.state?.topicId) {
+      openThread(e.state.topicId);
+    } else {
+      showView('list');
+    }
+  });
+
+  // Handle direct URL with hash on load (after topics are loaded)
+  function handleInitialHash() {
+    const hash = location.hash.slice(1);
+    if (hash && allTopics.find(t => t.id === hash)) {
+      openThread(hash);
+    }
   }
 
   // Expose onclick handlers to global scope (called from dynamic HTML)
